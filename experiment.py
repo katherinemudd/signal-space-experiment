@@ -124,15 +124,7 @@ class SigSpaceTrial(StaticTrial):
     time_credit_after_trial = 0
 
     def show_trial(self, experiment, participant):
-        # Set role based on participant ID (even/odd), if participants change roles
-        if "role_index" not in participant.vars:
-            participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
-            participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
-            participant.vars["current_node_index"] = 0
-            # Initialize participant's own completion tracking
-            participant.vars["node_completion"] = {i: False for i in range(len(nodes))}
-            # Store the color from the trial definition
-
+        # Role assignment is now done in director_message function
         if DOMAIN == 'communication':
             participant.vars["current_color"] = self.definition["color"]
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
@@ -152,8 +144,6 @@ class SigSpaceTrial(StaticTrial):
                     id_="wait_for_trial",
                     group_type="rock_paper_scissors",
                 ),
-                # if lambda participant: participant.vars.get("current_node_index") == 0:
-                #     self.director_message(participant=participant),
                 self.director_turn(participant=participant),
                 GroupBarrier(
                     id_="wait_for_trial",
@@ -227,14 +217,11 @@ class SigSpaceTrial(StaticTrial):
     def save_director_answer(self, participants: List[Participant]):
             for p in participants:
                 if p.vars.get("role") == "director":
-                    print('here')
                     answer = p.vars.get("last_action")
                     
                     # Generate audio file for the rhythm
                     from generate_sounds import parse_and_generate_audio
                     audio_filename = parse_and_generate_audio(answer)
-
-                    print(f'DEBUG! - Director answer: {audio_filename}')
 
                     # save to participant vars so matcher can access
                     for pp in participants:
@@ -250,8 +237,6 @@ class SigSpaceTrial(StaticTrial):
                 # Retrieve the director's answer from participant vars
                 director_answer = participant.vars.get("director_answer")
                 audio_filename = participant.vars.get("audio_filename")
-
-                print(f'DEBUG! {audio_filename}')
 
                 # Create audio player HTML
                 audio_player_html = f"""
@@ -578,43 +563,52 @@ def experiment_start():
     html = tags.div()
     with html:
         tags.h1("Experiment with a partner")
-        tags.p("You will soon begin an experiment with another participant.")
+        tags.p(
+            "You will soon begin an experiment with another participant."
+        )
         if DOMAIN == "communication":
-            tags.p("You will either have the role of creating sounds on a drum machine to describe colors or guessing which color your partner was referring to with a rhythm created on a drum machine.")
+            tags.p(
+                "You will either have the role of creating sounds on a drum machine to describe colors or guessing which color your partner was referring to with a rhythm created on a drum machine."
+               )
         if DOMAIN == "music":
-            tags.p("You will either have the role of creating sounds on a drum machine or giving feedback on the sounds created by your partner.")
-        tags.p("There are time limits for each experiment phase, so it is important that you keep progressing through the experiment to avoid timing out and ending the experiment early for you and your partner.")
-        tags.p("Please press 'Next' when you are ready to be paired with a participant.")
+            tags.p(
+                "You will either have the role of creating sounds on a drum machine or giving feedback on the sounds created by your partner."
+               )
+
+        tags.p(
+            "There are time limits for each experiment phase, so it is important that you keep progressing through the experiment to avoid timing out and ending the experiment early for you and your partner."
+        )
+        tags.p(
+            "Please press 'Next' when you are ready to be paired with a participant."
+        )
+
 
     return InfoPage(html, time_estimate=15)
 
-def director_message():
+def director_message(participant):
     """Show role-specific instructions before the experiment starts"""
-    def create_role_page(participant):
-        if participant.vars.get("role") == "director" or participant.vars.get("role") == "producer":  # debug
-            html = tags.div()
-            with html:
-                if DOMAIN == "communication":
-                    tags.h1("Director Instructions")
-                    tags.p("You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
-                    tags.p("You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
-                if DOMAIN == "music":
-                    tags.h1("Producer Instructions")
-                    tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
-                    tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
-                tags.p("Press 'Next' when you are ready to begin.")
-            return InfoPage(html, time_estimate=10)
-        else:
-            # For matchers, show a brief waiting message
-            return InfoPage(
-                tags.div(
-                    tags.h1("Waiting for Partner"),
-                    tags.p("Please wait while your partner reads their instructions.")
-                ),
-                time_estimate=5
-            )
+    # Set role based on participant ID (even/odd) if not already set
+    if "role_index" not in participant.vars:
+        participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
+        participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
+        participant.vars["current_node_index"] = 0
+        # Initialize participant's own completion tracking
+        participant.vars["node_completion"] = {i: False for i in range(len(nodes))}
     
-    return PageMaker(create_role_page, time_estimate=10)
+    # Show role-specific instructions
+    if participant.vars.get("role") == "director" or participant.vars.get("role") == "producer":
+        html = tags.div()
+        with html:
+            if DOMAIN == "communication":
+                tags.h1("Director Instructions")
+                tags.p("You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
+                tags.p("You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
+            if DOMAIN == "music":
+                tags.h1("Producer Instructions")
+                tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
+                tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
+            tags.p("Press 'Next' when you are ready to begin.")
+        return InfoPage(html, time_estimate=10)
 
 def debrief_and_feedback():
     return ModularPage(
@@ -701,6 +695,7 @@ class Exp(psynet.experiment.Experiment):
             initial_group_size=2,
         ),
         CodeBlock(lambda participant: participant.set_answer("continue")),
+        PageMaker(director_message, time_estimate=10),
         Module(
             "experiment",
             SigSpaceTrialMaker(
