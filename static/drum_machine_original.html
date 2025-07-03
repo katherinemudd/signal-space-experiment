@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Simple Drum Machine</title>
+<style>
+  body{font-family:'Avenir Next',Arial,sans-serif;background:#121212;color:#fff;margin:0;
+       padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+  .container{width:100%;max-width:800px}
+  h1{margin-top:0}
+  .controls{display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px;
+            padding:10px;background:#1e1e1e;border-radius:5px}
+  .control-group{display:flex;flex-direction:column;align-items:center;margin:5px}
+  .control-group label{margin-bottom:6px;font-size:14px;color:#aaa}
+  .button-group{display:flex;gap:5px}
+  button{background:#333;color:#fff;border:1px solid #555;padding:8px 12px;border-radius:4px;
+         cursor:pointer;font:inherit;transition:background-color .2s}
+  button:hover{background:#444}
+  button.active{background:#fff;color:#000}
+  .transport{display:flex;gap:10px}
+  .grid{display:grid;gap:5px;width:100%}
+  .row{display:grid;grid-template-columns:80px 1fr;margin-bottom:10px;align-items:center}
+  .row-label{text-align:right;padding-right:15px;font-size:14px}
+  .cells{display:grid;gap:5px}
+  .cell{background:#333;border:1px solid #555;border-radius:4px;aspect-ratio:1;cursor:pointer;transition:background-color .1s}
+  .cell:hover{background:#444}
+  .cell.active{background:#fff}
+  .cell.playing{background:#888}
+  .cell.active.playing{background:#aaa}
+  .export-section{margin-top:20px;padding:10px;background:#1e1e1e;border-radius:5px;width:100%}
+  .export-section textarea{width:100%;height:100px;background:#333;color:#fff;border:1px solid #555;
+                          border-radius:4px;padding:10px;font-family:monospace;margin-top:10px;resize:vertical}
+</style>
+<script>
+            window.load_data_from_csv = (filename) => {
+                // Implementation needed when code is downloaded
+            };
+
+            window.save_data_to_csv = (filename, data) => {
+                // Implementation needed when code is downloaded
+            };
+
+            window.call_llm = (system_prompt, user_messages, json_fields) => {
+                // Implementation needed when code is downloaded
+            };
+        </script></head>
+<body>
+<!-- ---------------------------------------------------------------- audio -->
+<audio id="kick-sample" preload="auto" src="kick.wav"></audio>
+<audio id="snare-sample" preload="auto" src="snare.wav"></audio>
+<audio id="hihat-sample" preload="auto" src="hihat.wav"></audio>
+<div class="container">
+<h1>Simple Drum Machine</h1>
+<div class="controls">
+<div class="control-group">
+<label>Sounds</label>
+<div class="button-group sounds-selector">
+<button class="active" data-sound="kick">Kick</button>
+<button data-sound="both">Kick + Snare</button>
+<button data-sound="all">Kick + Snare + Hat</button>
+</div>
+</div>
+<div class="control-group">
+<label>Grid Size</label>
+<div class="button-group grid-selector">
+<button class="active" data-steps="4">4</button>
+<button data-steps="8">8</button>
+<button data-steps="16">16</button>
+</div>
+</div>
+<div class="control-group">
+<label>Transport</label>
+<div class="transport">
+<button id="play-button">▶</button>
+<button id="stop-button">■</button>
+</div>
+</div>
+</div>
+<div class="grid" id="grid"></div>
+<div class="export-section">
+<div class="control-group" style="width:100%">
+<label>Export Beat Matrix</label>
+<button id="export-button">Export</button>
+<textarea id="export-output" placeholder="Click Export to generate binary matrix" readonly=""></textarea>
+</div>
+</div>
+</div>
+<script>
+/* ------------------------------- CONSTANTS ------------------------------ */
+const BASE_STEPS   = 16;     // internal resolution (always 16)
+const STEP_TIME    = 125;    // ms per 16-th note @120 BPM  (change for tempo)
+
+/* ------------------------------- STATE ---------------------------------- */
+const patterns = {
+  kick : Array(BASE_STEPS).fill(false),
+  snare: Array(BASE_STEPS).fill(false),
+  hihat: Array(BASE_STEPS).fill(false)
+};
+let currentSounds = 'kick';
+let displaySteps  = 4;           // what user is editing (4/8/16)
+let isPlaying     = false;
+let currentStep   = 0;           // 0‥15
+let intervalId    = null;
+
+/* ------------------------------- AUDIO ---------------------------------- */
+function playSample(name){
+  const el = document.getElementById(name+'-sample');
+  if(!el) return;
+  el.currentTime = 0;
+  el.play().catch(()=>{});  // ignore autoplay-related errors
+}
+
+/* ------------------------------ SEQUENCER ------------------------------- */
+function step(){
+  /* highlight current step (all visible cells pointing at this index) */
+  document.querySelectorAll('.cell.playing').forEach(c=>c.classList.remove('playing'));
+  document.querySelectorAll(`.cell[data-idx="${currentStep}"]`)
+    .forEach(c=>c.classList.add('playing'));
+
+  /* fire samples */
+  if(patterns.kick[currentStep])  playSample('kick');
+  if(currentSounds!=='kick' && patterns.snare[currentStep]) playSample('snare');
+  if(currentSounds==='all' && patterns.hihat[currentStep])  playSample('hihat');
+
+  currentStep = (currentStep + 1) % BASE_STEPS;
+}
+
+function togglePlayback(){
+  if(isPlaying){
+    clearInterval(intervalId);
+    document.querySelectorAll('.cell.playing').forEach(c=>c.classList.remove('playing'));
+    isPlaying = false;
+    currentStep = 0;
+  }else{
+    step();                       // play immediately
+    intervalId = setInterval(step, STEP_TIME);
+    isPlaying  = true;
+  }
+}
+
+/* ------------------------------ UI GRID --------------------------------- */
+function updateGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  /* which rows to show? */
+  const rows = currentSounds==='kick' ? ['kick']
+             : currentSounds==='both' ? ['kick','snare']
+             : ['kick','snare','hihat'];
+
+  const factor = BASE_STEPS / displaySteps;  // e.g. 4-step grid ⇒ factor 4
+
+  rows.forEach(row=>{
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'row';
+
+    /* label */
+    const label = document.createElement('div');
+    label.className = 'row-label';
+    label.textContent = row.charAt(0).toUpperCase()+row.slice(1);
+    rowDiv.appendChild(label);
+
+    /* cells */
+    const cells = document.createElement('div');
+    cells.className = 'cells';
+    cells.style.gridTemplateColumns = `repeat(${displaySteps},1fr)`;
+
+    for(let i=0;i<displaySteps;i++){
+      const idx     = i * factor;          // underlying 0‥15 index
+      const cell    = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row  = row;
+      cell.dataset.idx  = idx;
+
+      if(patterns[row][idx]) cell.classList.add('active');
+      if(idx === currentStep) cell.classList.add('playing');
+
+      cell.onclick = ()=>{
+        const on = cell.classList.toggle('active');
+        patterns[row][idx] = on;
+        if(on) playSample(row);
+      };
+      cells.appendChild(cell);
+    }
+
+    rowDiv.appendChild(cells);
+    grid.appendChild(rowDiv);
+  });
+}
+
+/* --------------------------- EXPORT FUNCTION ---------------------------- */
+function exportBeatMatrix() {
+  const factor = BASE_STEPS / displaySteps;
+  const rows = currentSounds==='kick' ? ['kick']
+             : currentSounds==='both' ? ['kick','snare']
+             : ['kick','snare','hihat'];
+  
+  let output = '';
+  
+  rows.forEach(row => {
+    let rowMatrix = [];
+    for(let i=0; i<displaySteps; i++) {
+      const idx = i * factor;
+      rowMatrix.push(patterns[row][idx] ? 1 : 0);
+    }
+    output += rowMatrix.join(' ') + '\n';
+  });
+  
+  document.getElementById('export-output').value = output.trim();
+}
+
+/* ------------------------------ INIT ------------------------------------ */
+function init(){
+  const playBtn = document.getElementById('play-button');
+  const stopBtn = document.getElementById('stop-button');
+  const exportBtn = document.getElementById('export-button');
+
+  playBtn.onclick = togglePlayback;
+  stopBtn.onclick = ()=>{ if(isPlaying) togglePlayback(); };
+  exportBtn.onclick = exportBeatMatrix;
+
+  /* sound set buttons */
+  document.querySelectorAll('.sounds-selector button').forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll('.sounds-selector button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      currentSounds = b.dataset.sound;
+      updateGrid();
+    };
+  });
+
+  /* grid-size buttons */
+  document.querySelectorAll('.grid-selector button').forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll('.grid-selector button').forEach(x=>x.classList.remove('active'));
+      const wasPlaying = isPlaying;
+      if(wasPlaying) togglePlayback();   // pause while changing view
+      b.classList.add('active');
+      displaySteps = +b.dataset.steps;   // 4 / 8 / 16
+      updateGrid();
+      if(wasPlaying) togglePlayback();
+    };
+  });
+
+  updateGrid();
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

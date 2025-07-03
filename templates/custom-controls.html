@@ -1,0 +1,89 @@
+{% macro color_cube(config) %}
+<script>
+// Store the current rhythm value
+window.currentRhythm = '';
+
+window.addEventListener('message', function(event) {
+    try {
+        console.warn('=== PARENT: Received message:', event.data);
+        
+        if (event.data && event.data.type === 'drumBeatChanged') {
+            console.warn('=== PARENT: Processing drumBeatChanged ===');
+            // Store the rhythm value in the global variable
+            window.currentRhythm = event.data.rhythm;
+            console.warn('=== PARENT: Stored rhythm value:', window.currentRhythm);
+        }
+    } catch (e) {
+        console.error('=== PARENT: Error in message handler:', e);
+        console.error('=== PARENT: Error stack:', e.stack);
+    }
+});
+
+psynet.stageResponse = function() {
+    psynet.response.staged.rawAnswer = window.currentRhythm || 'no rhythm';
+}
+</script>
+
+<div style='text-align:center; display: flex; flex-direction: column; align-items: center;'>
+    <div style='display:inline-block;
+        background-color: hsl({{ config.color_hsl[0] }}, {{ config.color_hsl[1] }}%, {{ config.color_hsl[2] }}%); 
+        width: 60px; height: 60px; border-radius: 50%; 
+        border: 1px solid black; margin: 0 5px; vertical-align: middle;'>
+    </div>
+    <br><br><br><br>
+    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}' 
+        width='600' height='300' style='border:none; margin-bottom: 0;'>
+    </iframe>
+    <style>
+        #next-button {
+            margin: 0 auto;
+            display: block;
+            background-color: black !important;
+            color: white !important;
+            border: none !important;
+        }
+    </style>
+</div>
+{% endmacro %}
+
+{% macro drum_machine(config) %}
+<script>
+// Store the current rhythm value
+window.currentRhythm = '';
+
+window.addEventListener('message', function(event) {
+    try {
+        console.warn('=== PARENT: Received message:', event.data);
+        
+        if (event.data && event.data.type === 'drumBeatChanged') {
+            console.warn('=== PARENT: Processing drumBeatChanged ===');
+            // Store the rhythm value in the global variable
+            window.currentRhythm = event.data.rhythm;
+            console.warn('=== PARENT: Stored rhythm value:', window.currentRhythm);
+        }
+    } catch (e) {
+        console.error('=== PARENT: Error in message handler:', e);
+        console.error('=== PARENT: Error stack:', e.stack);
+    }
+});
+
+psynet.stageResponse = function() {
+    psynet.response.staged.rawAnswer = window.currentRhythm || 'no rhythm';
+}
+</script>
+
+<div style='text-align:center; display: flex; flex-direction: column; align-items: center;'>
+    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}' 
+        width='600' height='300' style='border:none; margin-bottom: 0;'>
+    </iframe>
+    <style>
+        #next-button {
+            margin: 0 auto;
+            display: block;
+            background-color: black !important;
+            color: white !important;
+            border: none !important;
+        }
+    </style>
+</div>
+{% endmacro %} 

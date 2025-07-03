@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Simple Drum Machine</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    overflow: hidden;
+  }
+  .drum-machine {
+    padding: 0;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+  }
+  .grid {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 0;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    margin-bottom: 0;
+    align-items: center;
+  }
+  .row-label {
+    text-align: right;
+    padding-right: 5px;
+  }
+  .row-label img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+  }
+  .cells {
+    display: grid;
+    gap: 4px;
+    width: fit-content;
+  }
+  .cell {
+    width: 60px;
+    height: 60px;
+    background: #e0e0e0;  /* Light grey base */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .cell:hover {
+    background: #d0d0d0;  /* Slightly darker on hover */
+  }
+  .cell.active {
+    background: #666;  /* Dark grey when active */
+  }
+  .cell.playing {
+    background: #888;  /* Medium grey for playing state */
+  }
+  .cell.active.playing {
+    background: #555;  /* Darker grey for active + playing */
+  }
+</style>
+<script>
+            window.load_data_from_csv = (filename) => {
+                // Implementation needed when code is downloaded
+            };
+
+            window.save_data_to_csv = (filename, data) => {
+                // Implementation needed when code is downloaded
+            };
+
+            window.call_llm = (system_prompt, user_messages, json_fields) => {
+                // Implementation needed when code is downloaded
+            };
+        </script></head>
+<body>
+    <!-- Audio samples -->
+    <audio id="kick-sample" preload="auto" src="/static/audio/kick.wav"></audio>
+    <audio id="snare-sample" preload="auto" src="/static/audio/snare.wav"></audio>
+    <audio id="hihat-sample" preload="auto" src="/static/audio/hihat.wav"></audio>
+
+    <div class="drum-machine">
+        <div id="grid" class="grid"></div>
+    </div>
+
+    <script>
+        // Constants
+        const BASE_STEPS = 16;     // internal resolution (always 16)
+        const STEP_TIME = 125;     // ms per 16-th note @120 BPM
+
+        // State
+        const patterns = {
+            hihat: Array(BASE_STEPS).fill(false),
+            snare: Array(BASE_STEPS).fill(false),
+            kick: Array(BASE_STEPS).fill(false)
+        };
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        let kitParam = (urlParams.get('kit') || 'kick').toLowerCase().replace(/\s+/g, '');
+        console.warn('=== DRUM MACHINE: Kit parameter:', kitParam);
+        
+        let currentSounds;
+        if (kitParam === 'snare+kick') {
+            currentSounds = 'both';
+        } else if (kitParam === 'hat+snare+kick') {
+            currentSounds = 'all';
+        }
+        console.warn('=== DRUM MACHINE: Current sounds:', currentSounds);
+        
+        let displaySteps = parseInt(urlParams.get('grid'), 10) || 4; // 4, 8, 16
+        let isPlaying = false;
+        let currentStep = 0;
+        let intervalId = null;
+
+        // Audio functions
+        function playSample(name) {
+            const el = document.getElementById(name + '-sample');
+            if (!el) return;
+            el.currentTime = 0;
+            el.play().catch(() => {});  // ignore autoplay-related errors
+        }
+
+        // Sequencer
+        function step() {
+            document.querySelectorAll('.cell.playing').forEach(c => c.classList.remove('playing'));
+            document.querySelectorAll(`.cell[data-idx="${currentStep}"]`)
+                .forEach(c => c.classList.add('playing'));
+
+            if (currentSounds === 'all' && patterns.hihat[currentStep]) playSample('hihat');
+            if (currentSounds !== 'kick' && patterns.snare[currentStep]) playSample('snare');
+            if (patterns.kick[currentStep]) playSample('kick');
+
+            currentStep = (currentStep + 1) % BASE_STEPS;
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                clearInterval(intervalId);
+                document.querySelectorAll('.cell.playing').forEach(c => c.classList.remove('playing'));
+                isPlaying = false;
+                currentStep = 0;
+            } else {
+                step();
+                intervalId = setInterval(step, STEP_TIME);
+                isPlaying = true;
+            }
+        }
+
+        // Update grid
+        function updateGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            const rows = currentSounds === 'kick' ? ['kick']
+                : currentSounds === 'both' ? ['snare', 'kick']
+                : ['hihat', 'snare', 'kick'];
+
+            const factor = BASE_STEPS / displaySteps;
+
+            rows.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+
+                const label = document.createElement('div');
+                label.className = 'row-label';
+                const img = document.createElement('img');
+                img.src = `/static/figs/${row}.png`;
+                img.alt = row;
+                label.appendChild(img);
+                rowDiv.appendChild(label);
+
+                const cells = document.createElement('div');
+                cells.className = 'cells';
+                cells.style.gridTemplateColumns = `repeat(${displaySteps}, 60px)`;
+
+                for (let i = 0; i < displaySteps; i++) {
+                    const idx = i * factor;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.idx = idx;
+
+                    if (patterns[row][idx]) cell.classList.add('active');
+                    if (idx === currentStep) cell.classList.add('playing');
+
+                    cell.onclick = () => {
+                        const on = cell.classList.toggle('active');
+                        patterns[row][idx] = on;
+                        if (on) playSample(row);
+                        exportBeatMatrix();
+                    };
+                    cells.appendChild(cell);
+                }
+
+                rowDiv.appendChild(cells);
+                grid.appendChild(rowDiv);
+            });
+
+            exportBeatMatrix();
+        }
+
+        // Export function
+        function exportBeatMatrix() {
+            const factor = BASE_STEPS / displaySteps;
+            const rows = currentSounds === 'kick' ? ['kick']
+                : currentSounds === 'both' ? ['snare', 'kick']
+                : ['hihat', 'snare', 'kick'];
+
+            let answerString = '';
+
+            rows.forEach(row => {
+                let rowMatrix = [];
+                for (let i = 0; i < displaySteps; i++) {
+                    const idx = i * factor;
+                    rowMatrix.push(patterns[row][idx] ? 1 : 0);
+                }
+                answerString += row + '_' + rowMatrix.join('') + '_';
+            });
+
+            // Remove trailing underscore
+            answerString = answerString.replace(/_$/, '');
+            console.log('drum machine log:', answerString);
+
+            // Send message to parent window
+            window.parent.postMessage({
+                type: 'drumBeatChanged',
+                rhythm: answerString
+            }, '*');
+        }
+
+        // Initialize
+        function init() {
+            updateGrid();
+            // Start playback automatically
+            if (!isPlaying) togglePlayback();
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
