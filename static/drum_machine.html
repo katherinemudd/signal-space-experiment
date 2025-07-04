@@ -119,6 +119,47 @@
         let currentStep = 0;
         let intervalId = null;
 
+        // Parse initial pattern if provided
+        function parseInitialPattern(patternString) {
+            if (!patternString) return;
+            
+            console.log('=== DRUM MACHINE: Parsing initial pattern:', patternString);
+            
+            // Parse pattern like "snare_0000_kick_0000" or "hihat_0000_snare_0000_kick_0000"
+            const patternParts = patternString.split('_');
+            
+            for (let i = 0; i < patternParts.length; i += 2) {
+                const drum = patternParts[i];
+                const pattern = patternParts[i + 1];
+                
+                if (patterns.hasOwnProperty(drum) && pattern) {
+                    // Convert pattern string to boolean array
+                    const factor = BASE_STEPS / displaySteps;
+                    for (let j = 0; j < Math.min(pattern.length, displaySteps); j++) {
+                        const idx = j * factor;
+                        if (idx < BASE_STEPS) {
+                            patterns[drum][idx] = pattern[j] === '1';
+                        }
+                    }
+                    console.log(`=== DRUM MACHINE: Set ${drum} pattern:`, pattern);
+                }
+            }
+        }
+
+        // Get initial pattern from URL parameter
+        const initialPattern = urlParams.get('initial_pattern');
+        console.log('=== DRUM MACHINE: URL params:', urlParams.toString());
+        console.log('=== DRUM MACHINE: Initial pattern from URL:', initialPattern);
+        if (initialPattern) {
+            // Decode the pattern (replace %5F with _)
+            const decodedPattern = initialPattern.replace(/%5F/g, '_');
+            console.log('=== DRUM MACHINE: Decoded pattern:', decodedPattern);
+            parseInitialPattern(decodedPattern);
+            console.log('=== DRUM MACHINE: Patterns after parsing:', patterns);
+        } else {
+            console.log('=== DRUM MACHINE: No initial pattern provided');
+        }
+
         // Audio functions
         function playSample(name) {
             const el = document.getElementById(name + '-sample');

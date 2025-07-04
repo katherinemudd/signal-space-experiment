@@ -3,6 +3,12 @@
 // Store the current rhythm value
 window.currentRhythm = '';
 
+// Debug logging for initial pattern
+console.log('=== COLOR CUBE: Color HSL:', [{{ config.color_hsl[0] }}, {{ config.color_hsl[1] }}, {{ config.color_hsl[2] }}]);
+console.log('=== COLOR CUBE: Drum kit:', '{{ config.drum_kit }}');
+console.log('=== COLOR CUBE: Grid size:', {{ config.grid_size }});
+console.log('=== COLOR CUBE: Initial pattern:', {{ config.initial_pattern | tojson if config.initial_pattern else 'null' }});
+
 window.addEventListener('message', function(event) {
     try {
         console.warn('=== PARENT: Received message:', event.data);
@@ -31,7 +37,7 @@ psynet.stageResponse = function() {
         border: 1px solid black; margin: 0 5px; vertical-align: middle;'>
     </div>
     <br><br><br><br>
-    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}' 
+    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}{% if config.initial_pattern %}&initial_pattern={{ config.initial_pattern.replace('_', '%5F') }}{% endif %}' 
         width='600' height='300' style='border:none; margin-bottom: 0;'>
     </iframe>
     <style>
@@ -50,6 +56,11 @@ psynet.stageResponse = function() {
 <script>
 // Store the current rhythm value
 window.currentRhythm = '';
+
+// Debug logging for initial pattern
+console.log('=== DRUM MACHINE: Drum kit:', '{{ config.drum_kit }}');
+console.log('=== DRUM MACHINE: Grid size:', {{ config.grid_size }});
+console.log('=== DRUM MACHINE: Initial pattern:', {{ config.initial_pattern | tojson if config.initial_pattern else 'null' }});
 
 window.addEventListener('message', function(event) {
     try {
@@ -73,7 +84,7 @@ psynet.stageResponse = function() {
 </script>
 
 <div style='text-align:center; display: flex; flex-direction: column; align-items: center;'>
-    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}' 
+    <iframe src='/static/drum_machine.html?kit={{ config.drum_kit.replace('+', '%2B') }}&grid={{ config.grid_size }}{% if config.initial_pattern %}&initial_pattern={{ config.initial_pattern.replace('_', '%5F') }}{% endif %}' 
         width='600' height='300' style='border:none; margin-bottom: 0;'>
     </iframe>
     <style>
