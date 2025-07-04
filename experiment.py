@@ -485,152 +485,109 @@ class SigSpaceTrial(StaticTrial):
         participant.vars["current_node_index"] = current_index + 1
 
     def feedback_page(self, experiment, participant):
-        """Generate feedback based on role and domain"""
-        role = participant.vars.get("role")
-        
         if DOMAIN == "communication":
-            return self._communication_feedback(participant, role)
+            if participant.vars.get("role") == "matcher":
+                matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
+                matcher_choice_hsl = color_dict.get(matcher_choice, [0, 0, 0])
+
+                director_color = participant.vars["director_color"]  # Use the stored director color
+                director_color_hsl = color_dict.get(director_color, [0, 0, 0])
+
+                if matcher_choice != director_color:
+                    result = "Unsuccessful!"
+                    self.definition["attempts"] = self.definition.get("attempts", 0) + 1  # Increment attempts counter
+                elif matcher_choice == director_color:
+                    result = "Successful!"
+                    current_node_index = participant.vars.get("current_node_index", 0)  # Mark as completed in participant's own state
+                    participant.vars["node_completion"][current_node_index] = True
+
+                    if participant.vars.get("current_node_index") < len(nodes) - 1:
+                        self.increase_current_node(participant)
+
+                if result == "Successful!":
+                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                                    f"You guessed the right color.<br>")
+                elif result == "Unsuccessful!":
+                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                                    f"You guessed the wrong color. Try again!<br>")
+
+            else:  # "director"
+                matcher_choice = participant.vars.get("last_trial", {}).get("action_other")  # Get the matcher's choice from last_trial
+                matcher_choice_hsl = color_dict.get(matcher_choice, [0, 0, 0])
+
+                director_color = participant.vars["director_color"]  # Use the stored director color
+                director_color_hsl = color_dict.get(director_color, [0, 0, 0])
+                print(f"DEBUG!!! - Director feedback: matcher_choice={matcher_choice}, director_color={director_color}")
+
+                if matcher_choice == director_color:
+                    result = "Successful!"
+                    # Mark as completed in participant's own state
+                    current_node_index = participant.vars.get("current_node_index", 0)
+                    participant.vars["node_completion"][current_node_index] = True
+                    
+                    # Move to next node if this one is completed
+                    if participant.vars.get("current_node_index") < len(nodes) - 1:
+                        self.increase_current_node(participant)
+                    else:
+                        # All nodes completed
+                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                    print(f'DEBUG - Director sees correct choice: {matcher_choice} == {director_color}')
+                else:
+                    print(f'DEBUG - Director sees wrong choice: {matcher_choice} != {director_color}')
+                    # Don't set completed flag - let the while loop continue
+                    result = "Unsuccessful!"
+
+                # Set prompt based on result
+                if result == "Successful!":
+                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                                    f"Your partner guessed the right color.<br>")
+                elif result == "Unsuccessful!":
+                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                                    f"Your partner guessed the wrong color. Try again!<br>")
+
         elif DOMAIN == "music":
-            return self._music_feedback(participant, role)
-        else:
-            raise ValueError(f"Unknown domain: {DOMAIN}")
+            if participant.vars.get("role") == "matcher":
+                matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
+                current_node_index = participant.vars.get("current_node_index", 0)
+                print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_index={current_node_index}")
+                
+                if matcher_choice == "Appealing":
+                    prompt = Markup(f"<strong>Successful!</strong><br><br>"
+                                f"You found your partner's rhythm appealing.")
+                    # Mark as completed in participant's own state
+                    participant.vars["node_completion"][current_node_index] = True
 
-    def _communication_feedback(self, participant, role):
-        """Handle communication domain feedback"""
-        if role == "matcher":
-            return self._matcher_communication_feedback(participant)
-        elif role == "director":
-            return self._director_communication_feedback(participant)
-        else:
-            raise ValueError(f"Unknown role: {role}")
+                    # Move to next node if this one is completed
+                    if participant.vars.get("current_node_index", 0) < len(nodes) - 1:
+                        self.increase_current_node(participant)  # todo
+                    else:
+                        # All nodes completed
+                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                else:  # Don't set completed flag - let the while loop continue
+                    prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
+                            f"You did not find your partner's rhythm appealing.")
+            else:  # director
+                matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
+                current_node_index = participant.vars.get("current_node_index", 0)
+                print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_index={current_node_index}")
+                
+                if matcher_choice == "Appealing":
+                    prompt = Markup(f"<strong>Successful!</strong><br><br>"
+                                f"Your partner found your rhythm appealing.")
+                    # Mark as completed in participant's own state
+                    participant.vars["node_completion"][current_node_index] = True
+                    print(f"DEBUG - Music director: Marking node {current_node_index} as completed")
+                    
+                    # Move to next node if this one is completed
+                    if participant.vars.get("current_node_index") < len(nodes) - 1:
+                        self.increase_current_node(participant)
+                    else:
+                        # All nodes completed
+                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                else:
+                    prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
+                            f"Your partner did not find your rhythm appealing.")
 
-    def _matcher_communication_feedback(self, participant):
-        """Handle matcher feedback in communication domain"""
-        matcher_choice = participant.vars.get("last_action")
-        director_color = participant.vars["director_color"]
-        
-        print(f"DEBUG - Matcher feedback: choice={matcher_choice}, director_color={director_color}")
-        
-        if matcher_choice == director_color:
-            # Success - mark as completed and move to next node
-            current_node_index = participant.vars.get("current_node_index", 0)
-            participant.vars["node_completion"][current_node_index] = True
-            
-            if participant.vars.get("current_node_index") < len(nodes) - 1:
-                self.increase_current_node(participant)
-            
-            prompt = Markup("<strong>Successful!</strong><br><br>You guessed the right color.<br>")
-        else:
-            # Failure - increment attempts and continue
-            self.definition["attempts"] = self.definition.get("attempts", 0) + 1
-            prompt = Markup("<strong>Unsuccessful!</strong><br><br>You guessed the wrong color. Try again!<br>")
-        
-        return ModularPage(
-            "feedback",
-            Prompt(
-                text=Markup(f"{prompt}<style>#next-button {{ display: block; margin: 20px auto; background-color: black !important; border-color: black !important; }}</style>"),
-                text_align="center"
-            ),
-            time_estimate=5,
-            show_next_button=True
-        )
-
-    def _director_communication_feedback(self, participant):
-        """Handle director feedback in communication domain"""
-        matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
-        director_color = participant.vars["director_color"]
-        
-        print(f"DEBUG - Director feedback: matcher_choice={matcher_choice}, director_color={director_color}")
-        
-        if matcher_choice == director_color:
-            # Success - mark as completed and move to next node
-            current_node_index = participant.vars.get("current_node_index", 0)
-            participant.vars["node_completion"][current_node_index] = True
-            
-            if participant.vars.get("current_node_index") < len(nodes) - 1:
-                self.increase_current_node(participant)
-            else:
-                print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
-            
-            print(f'DEBUG - Director sees correct choice: {matcher_choice} == {director_color}')
-            prompt = Markup("<strong>Successful!</strong><br><br>Your partner guessed the right color.<br>")
-        else:
-            # Failure - continue with same node
-            print(f'DEBUG - Director sees wrong choice: {matcher_choice} != {director_color}')
-            prompt = Markup("<strong>Unsuccessful!</strong><br><br>Your partner guessed the wrong color. Try again!<br>")
-        
-        return ModularPage(
-            "feedback",
-            Prompt(
-                text=Markup(f"{prompt}<style>#next-button {{ display: block; margin: 20px auto; background-color: black !important; border-color: black !important; }}</style>"),
-                text_align="center"
-            ),
-            time_estimate=5,
-            show_next_button=True
-        )
-
-    def _music_feedback(self, participant, role):
-        """Handle music domain feedback"""
-        if role == "matcher":
-            return self._matcher_music_feedback(participant)
-        elif role == "director":
-            return self._director_music_feedback(participant)
-        else:
-            raise ValueError(f"Unknown role: {role}")
-
-    def _matcher_music_feedback(self, participant):
-        """Handle matcher feedback in music domain"""
-        matcher_choice = participant.vars.get("last_action")
-        current_node_index = participant.vars.get("current_node_index", 0)
-        
-        print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_index={current_node_index}")
-        
-        if matcher_choice == "Appealing":
-            # Success - mark as completed and move to next node
-            participant.vars["node_completion"][current_node_index] = True
-            
-            if participant.vars.get("current_node_index", 0) < len(nodes) - 1:
-                self.increase_current_node(participant)
-            else:
-                print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
-            
-            prompt = Markup("<strong>Successful!</strong><br><br>You found your partner's rhythm appealing.")
-        else:
-            # Failure - continue with same node
-            prompt = Markup("<strong>Unsuccessful!</strong><br><br>You did not find your partner's rhythm appealing.")
-        
-        return ModularPage(
-            "feedback",
-            Prompt(
-                text=Markup(f"{prompt}<style>#next-button {{ display: block; margin: 20px auto; background-color: black !important; border-color: black !important; }}</style>"),
-                text_align="center"
-            ),
-            time_estimate=5,
-            show_next_button=True
-        )
-
-    def _director_music_feedback(self, participant):
-        """Handle director feedback in music domain"""
-        matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
-        current_node_index = participant.vars.get("current_node_index", 0)
-        
-        print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_index={current_node_index}")
-        
-        if matcher_choice == "Appealing":
-            # Success - mark as completed and move to next node
-            participant.vars["node_completion"][current_node_index] = True
-            print(f"DEBUG - Music director: Marking node {current_node_index} as completed")
-            
-            if participant.vars.get("current_node_index") < len(nodes) - 1:
-                self.increase_current_node(participant)
-            else:
-                print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
-            
-            prompt = Markup("<strong>Successful!</strong><br><br>Your partner found your rhythm appealing.")
-        else:
-            # Failure - continue with same node
-            prompt = Markup("<strong>Unsuccessful!</strong><br><br>Your partner did not find your rhythm appealing.")
-        
         return ModularPage(
             "feedback",
             Prompt(
