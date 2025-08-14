@@ -30,8 +30,8 @@ import pydevd_pycharm
 logger = get_logger()
 
 DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
-GRID_SIZE = 4            # options: 4, 8
-DOMAIN = "communication"  # options: "communication", "music"
+GRID_SIZE = 8            # options: 4, 8
+DOMAIN = "communication"         # options: "communication", "music"
 
 color_dict = {'yellow': [60, 100, 50],
               'orange': [38.8, 100, 50],
@@ -58,11 +58,13 @@ if DOMAIN == "communication":
             })
         )
 elif DOMAIN == "music":
-    nodes = []  # Create 9 nodes, where director_index 0 will always be director
-    for i in range(0, 9):
+    nodes = []
+    melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
+    for melodies in melodies:
         nodes.append(
             StaticNode(definition={
                 "director_index": 0,  # First participant will always be director
+                "melody": melodies,
                 "attempts": 0,  # Track number of attempts for this node
                 "completed": False  # Track if node has been completed
             })
@@ -134,48 +136,49 @@ class SigSpaceTrial(StaticTrial):
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
         # Add debugging for node progression
-        current_node_index = participant.vars.get("current_node_index", 0)
+        current_node_index = participant.vars.get("current_node_index")
         print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_index={current_node_index}, domain={DOMAIN}")
         print(f"DEBUG - Node definition: {self.definition}")
         print(f"DEBUG - Participant's node completion: {participant.vars.get('node_completion', {})}")
 
         # Create a while loop that continues until this specific node is completed
         return while_loop(
-            "node_attempt_loop",
-            lambda participant: not participant.vars.get("node_completion", {}).get(participant.vars.get("current_node_index", 0), False),  # Use participant's own completion state
-            join(
-                GroupBarrier(
-                    id_="wait_for_trial",
-                    group_type="rock_paper_scissors",
+                "node_attempt_loop",
+                lambda participant: not participant.vars.get("node_completion", {}).get(str(participant.vars.get("current_node_index")), False),  # Use participant's own completion state
+                # Continue looping as long as the current node is NOT completed for this participant
+                join(
+                    GroupBarrier(
+                        id_="wait_for_trial",
+                        group_type="rock_paper_scissors",
+                    ),
+                    self.director_turn(participant=participant),
+                    GroupBarrier(
+                        id_="wait_for_trial",
+                        group_type="rock_paper_scissors",
+                        on_release=self.save_director_answer,
+                    ),
+                    self.matcher_turn(participant=participant),
+                    GroupBarrier(
+                        id_="wait_for_trial",
+                        group_type="rock_paper_scissors",
+                        on_release=self.get_matcher_answer,
+                    ),
+                    WaitPage(
+                        1,
+                        content="Waiting for your partner...",
+                    ),
+                    self.feedback_page(experiment=experiment, participant=participant),
+                    GroupBarrier(
+                        id_="finished_trial",
+                        group_type="rock_paper_scissors",
+                    ),
                 ),
-                self.director_turn(participant=participant),
-                GroupBarrier(
-                    id_="wait_for_trial",
-                    group_type="rock_paper_scissors",
-                    on_release=self.save_director_answer,
-                ),
-                self.matcher_turn(participant=participant),
-                GroupBarrier(
-                    id_="wait_for_trial",
-                    group_type="rock_paper_scissors",
-                    on_release=self.get_matcher_color,
-                ),
-                WaitPage(
-                    1,
-                    content="Waiting for your partner...",
-                ),
-                self.feedback_page(experiment=experiment, participant=participant),
-                GroupBarrier(
-                    id_="finished_trial",
-                    group_type="rock_paper_scissors",
-                ),
-            ),
-            expected_repetitions=9,  # Allow up to 9 attempts per node
-        )
+                expected_repetitions=9,  # Allow up to 9 attempts per node
+            )
 
     def director_turn(self, participant):
         if participant.vars.get("role") == "director":
-            current_node_index = participant.vars.get("current_node_index", 0)
+            current_node_index = participant.vars.get("current_node_index")
             
             # Check if we already have a rhythm for this node (use string key for consistency)
             existing_rhythm = participant.vars.get("node_rhythms", {}).get(str(current_node_index))
@@ -206,7 +209,7 @@ class SigSpaceTrial(StaticTrial):
                             save_answer="last_action"
                         )
                     )
-                else:  # music domain
+                else:  # DOMAIN == "music"
                     return join(
                         ModularPage(
                             "director-task",
@@ -242,13 +245,13 @@ class SigSpaceTrial(StaticTrial):
                             save_answer="last_action"
                         )
                     )
-                else:  # music domain
+                else:  # DOMAIN == "music"
                     return join(
                         ModularPage(
                             "director-task",
                             Prompt(
                                 Markup(
-                                    "<div style='text-align:center;'>Send an appealing rhythm to your partner</div><br>"
+                                    "<div style='text-align:center;'>Send an appealing rhythm to your partner.</div><br>"
                                 ),
                                 text_align="center"
                             ),
@@ -268,7 +271,7 @@ class SigSpaceTrial(StaticTrial):
     def save_director_answer(self, participants: List[Participant]):
             for p in participants:
                 if p.vars.get("role") == "director":
-                    current_node_index = p.vars.get("current_node_index", 0)
+                    current_node_index = p.vars.get("current_node_index")
                     
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
@@ -405,12 +408,11 @@ class SigSpaceTrial(StaticTrial):
                         time_estimate=10,
                         save_answer="last_action"
                     )
-                else:  # music domain
-                    # Music domain: Show like/dislike buttons horizontally
+                else:  # DOMAIN == "music"
                     return ModularPage(
                         "matcher-task",
                         Prompt(Markup(
-                            "<div style='text-align:center;'>Your partner produced this rhythm. How appealing do you find this rhythm?</div><br>" +
+                            "<div style='text-align:center;'>Your partner produced this rhythm. What do you think of this rhythm?</div><br>" +
                             audio_player_html +
                             "<style>.btn-primary { background-color: black !important; border-color: black !important; color: white !important; }</style>"
                         )),
@@ -437,7 +439,7 @@ class SigSpaceTrial(StaticTrial):
                 )
             )
 
-    def get_matcher_color(self, participants: List[Participant]):
+    def get_matcher_answer(self, participants: List[Participant]):
         try:
             # this is just to set the matcher_choice as an accessible attribute to both participants
             assert len(participants) == 2
@@ -476,7 +478,7 @@ class SigSpaceTrial(StaticTrial):
                 }
             print(f"DEBUG - Matcher answers: matcher={matcher_choice}, director={director_choice}")
         except Exception as e:
-            print(f"Error in get_matcher_color: {str(e)}")
+            print(f"Error in get_matcher_answer: {str(e)}")
 
     def increase_current_node(self, participant):
         current_index = participant.vars.get("current_node_index")
@@ -499,7 +501,7 @@ class SigSpaceTrial(StaticTrial):
                 elif matcher_choice == director_color:
                     result = "Successful!"
                     current_node_index = participant.vars.get("current_node_index", 0)  # Mark as completed in participant's own state
-                    participant.vars["node_completion"][current_node_index] = True
+                    participant.vars["node_completion"][str(current_node_index)] = True
 
                     if participant.vars.get("current_node_index") < len(nodes) - 1:
                         self.increase_current_node(participant)
@@ -523,7 +525,7 @@ class SigSpaceTrial(StaticTrial):
                     result = "Successful!"
                     # Mark as completed in participant's own state
                     current_node_index = participant.vars.get("current_node_index", 0)
-                    participant.vars["node_completion"][current_node_index] = True
+                    participant.vars["node_completion"][str(current_node_index)] = True
                     
                     # Move to next node if this one is completed
                     if participant.vars.get("current_node_index") < len(nodes) - 1:
@@ -555,7 +557,7 @@ class SigSpaceTrial(StaticTrial):
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")
                     # Mark as completed in participant's own state
-                    participant.vars["node_completion"][current_node_index] = True
+                    participant.vars["node_completion"][str(current_node_index)] = True
 
                     # Move to next node if this one is completed
                     if participant.vars.get("current_node_index", 0) < len(nodes) - 1:
@@ -575,7 +577,7 @@ class SigSpaceTrial(StaticTrial):
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"Your partner found your rhythm appealing.")
                     # Mark as completed in participant's own state
-                    participant.vars["node_completion"][current_node_index] = True
+                    participant.vars["node_completion"][str(current_node_index)] = True
                     print(f"DEBUG - Music director: Marking node {current_node_index} as completed")
                     
                     # Move to next node if this one is completed
@@ -661,7 +663,7 @@ def director_message(participant):
         participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
         participant.vars["current_node_index"] = 0
         # Initialize participant's own completion tracking
-        participant.vars["node_completion"] = {i: False for i in range(len(nodes))}
+        participant.vars["node_completion"] = {str(i): False for i in range(len(nodes))}
     
     # Show role-specific instructions
     if participant.vars.get("role") == "director" or participant.vars.get("role") == "producer":
@@ -776,8 +778,8 @@ class Exp(psynet.experiment.Experiment):
                 sync_group_type="rock_paper_scissors",
             ),
         ),
-        questionnaire(),
-        debrief_and_feedback(),
+        #questionnaire(),
+        #debrief_and_feedback(),
         #redirect_to_prolific(),  # todo, probably need to add a button back to Prolific or a completion code
         SuccessfulEndPage(),
     )
