@@ -163,6 +163,16 @@ class SigSpaceTrial(StaticTrial):
             participant.vars["current_color"] = self.definition["color"]
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
+        print(f'DEBUG - last trial: {participant.vars.get("last_trial", {}).get("action_other")}')
+
+        # Clear the previous trial's data
+        participant.vars["last_trial"] = {
+            "action_self": None,
+            "action_other": None,
+        }
+
+        print(f'DEBUG - last trial: {participant.vars.get("last_trial", {}).get("action_other")}')
+
         # Add debugging for node progression
         node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
         print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_content={node_content}, domain={DOMAIN}")
@@ -213,11 +223,6 @@ class SigSpaceTrial(StaticTrial):
             
             # Check if we already have a rhythm for this node (use node content as key)
             existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
-            print(f"DEBUG!! - existing_rhythm? {existing_rhythm}")
-            print(f"DEBUG!! - node_rhythms dict: {participant.vars.get('node_rhythms', {})}")
-            print(f"DEBUG!! - node_content: {node_content}")
-            print(f"DEBUG!! - existing_rhythm type: {type(existing_rhythm)}")
-            print(f"DEBUG!! - existing_rhythm truthy: {bool(existing_rhythm)}")
             
             if existing_rhythm and existing_rhythm is not None:
                 # Show the existing rhythm with the drum machine pre-filled
@@ -595,13 +600,14 @@ class SigSpaceTrial(StaticTrial):
         elif DOMAIN == "music":
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
-                node_content = self.definition.get("melody")
-                print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_content={node_content}")
+                #node_content = self.definition.get("melody")
+                #print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_content={node_content}")
                 
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")
                     # Mark as completed using node content as key
+                    node_content = self.definition.get("melody")
                     participant.vars["node_completion"][node_content] = True
 
                     # Check if there are any uncompleted nodes left
@@ -619,13 +625,14 @@ class SigSpaceTrial(StaticTrial):
                             f"You did not find your partner's rhythm appealing.")
             else:  # director
                 matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
-                node_content = self.definition.get("melody")
-                print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_content={node_content}")
+                #node_content = self.definition.get("melody")
+                #print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_content={node_content}")
                 
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"Your partner found your rhythm appealing.")
                     # Mark as completed using node content as key
+                    node_content = self.definition.get("melody")
                     participant.vars["node_completion"][node_content] = True
                     print(f"DEBUG - Music director: Marking node {node_content} as completed")
                     
