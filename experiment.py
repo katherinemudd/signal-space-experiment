@@ -31,7 +31,7 @@ logger = get_logger()
 
 DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
 GRID_SIZE = 8            # options: 4, 8
-DOMAIN = "communication"         # options: "communication", "music"
+DOMAIN = "music"         # options: "communication", "music"
 
 color_dict = {'yellow': [60, 100, 50],
               'orange': [38.8, 100, 50],
@@ -60,11 +60,11 @@ if DOMAIN == "communication":
 elif DOMAIN == "music":
     nodes = []
     melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
-    for melodies in melodies:
+    for melody in melodies:
         nodes.append(
             StaticNode(definition={
                 "director_index": 0,  # First participant will always be director
-                "melody": melodies,
+                "melody": melody,
                 "attempts": 0,  # Track number of attempts for this node
                 "completed": False  # Track if node has been completed
             })
@@ -122,6 +122,34 @@ class SigSpaceTrialMaker(StaticTrialMaker):
             allow_repeated_nodes=allow_repeated_nodes,
             sync_group_type=sync_group_type,
         )
+    
+    def get_next_trial(self, participant):
+        """Override to only select uncompleted nodes"""
+        # Get all uncompleted nodes
+        completed_nodes = participant.vars.get("node_completion", {})
+        uncompleted_nodes = []
+        
+        for node in self.nodes:
+            if DOMAIN == "music":
+                node_content = node.definition["melody"]
+            else:  # communication
+                node_content = node.definition["color"]
+            
+            if not completed_nodes.get(node_content, False):
+                uncompleted_nodes.append(node)
+        
+        print(f"DEBUG - SigSpaceTrialMaker: completed_nodes={completed_nodes}")
+        print(f"DEBUG - SigSpaceTrialMaker: uncompleted_nodes count={len(uncompleted_nodes)}")
+        
+        if uncompleted_nodes:
+            # Randomly select from uncompleted nodes
+            selected_node = random.choice(uncompleted_nodes)
+            print(f"DEBUG - SigSpaceTrialMaker: selected node content={selected_node.definition.get('melody', selected_node.definition.get('color'))}")
+            return selected_node
+        else:
+            # All nodes completed
+            print(f"DEBUG - SigSpaceTrialMaker: all nodes completed")
+            return None
 
 class SigSpaceTrial(StaticTrial):
     time_estimate = 5
@@ -136,15 +164,18 @@ class SigSpaceTrial(StaticTrial):
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
         # Add debugging for node progression
-        current_node_index = participant.vars.get("current_node_index")
-        print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_index={current_node_index}, domain={DOMAIN}")
+        node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
+        print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_content={node_content}, domain={DOMAIN}")
         print(f"DEBUG - Node definition: {self.definition}")
         print(f"DEBUG - Participant's node completion: {participant.vars.get('node_completion', {})}")
 
         # Create a while loop that continues until this specific node is completed
         return while_loop(
                 "node_attempt_loop",
-                lambda participant: not participant.vars.get("node_completion", {}).get(str(participant.vars.get("current_node_index")), False),  # Use participant's own completion state
+                lambda participant: not participant.vars.get("node_completion", {}).get(
+                    self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody"), 
+                    False
+                ),  # Use participant's own completion state
                 # Continue looping as long as the current node is NOT completed for this participant
                 join(
                     GroupBarrier(
@@ -178,13 +209,13 @@ class SigSpaceTrial(StaticTrial):
 
     def director_turn(self, participant):
         if participant.vars.get("role") == "director":
-            current_node_index = participant.vars.get("current_node_index")
+            node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
             
-            # Check if we already have a rhythm for this node (use string key for consistency)
-            existing_rhythm = participant.vars.get("node_rhythms", {}).get(str(current_node_index))
+            # Check if we already have a rhythm for this node (use node content as key)
+            existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
             print(f"DEBUG!! - existing_rhythm? {existing_rhythm}")
             print(f"DEBUG!! - node_rhythms dict: {participant.vars.get('node_rhythms', {})}")
-            print(f"DEBUG!! - current_node_index: {current_node_index}")
+            print(f"DEBUG!! - node_content: {node_content}")
             print(f"DEBUG!! - existing_rhythm type: {type(existing_rhythm)}")
             print(f"DEBUG!! - existing_rhythm truthy: {bool(existing_rhythm)}")
             
@@ -229,7 +260,7 @@ class SigSpaceTrial(StaticTrial):
                 if DOMAIN == "communication":
                     director_color = participant.vars["current_color"]
                     director_color_hsl = color_dict.get(director_color)
-                    print(f'DEBUG - Director turn: current node index is {current_node_index}, node is {self.definition}')
+                    print(f'DEBUG - Director turn: node content is {node_content}, node is {self.definition}')
 
                     return join(
                         ModularPage(
@@ -271,30 +302,38 @@ class SigSpaceTrial(StaticTrial):
     def save_director_answer(self, participants: List[Participant]):
             for p in participants:
                 if p.vars.get("role") == "director":
-                    current_node_index = p.vars.get("current_node_index")
+                    # Get the current node content from the trial definition
+                    # We need to access the trial definition through the experiment
+                    experiment = get_experiment()
+                    current_trial = p.current_trial
+                    if current_trial:
+                        node_content = current_trial.definition.get("color") if DOMAIN == "communication" else current_trial.definition.get("melody")
+                    else:
+                        print("ERROR - No current trial found")
+                        continue
                     
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
-                    print(f"DEBUG! - save_director_answer: current_node_index={current_node_index}, answer={answer}")
+                    print(f"DEBUG! - save_director_answer: node_content={node_content}, answer={answer}")
 
                     if answer is None:
-                        print(f"ERROR - Director's last_action is None for node {current_node_index}")
+                        print(f"ERROR - Director's last_action is None for node {node_content}")
                         continue
                     
                     # Check if we already have a rhythm for this node
-                    existing_rhythm = p.vars.get("node_rhythms", {}).get(str(current_node_index))
+                    existing_rhythm = p.vars.get("node_rhythms", {}).get(node_content)
                     print(f"DEBUG! - save_director_answer: existing_rhythm={existing_rhythm}")
 
                     if existing_rhythm and existing_rhythm is not None and answer == existing_rhythm:
                         # Rhythm hasn't changed - reuse existing audio
-                        audio_filename = p.vars.get("node_audio_filenames", {}).get(str(current_node_index))
-                        print(f"DEBUG - Reusing existing rhythm and audio for node {current_node_index}: {answer}")
+                        audio_filename = p.vars.get("node_audio_filenames", {}).get(node_content)
+                        print(f"DEBUG - Reusing existing rhythm and audio for node {node_content}: {answer}")
                     else:
                         # New or modified rhythm - store it and generate new audio
                         if "node_rhythms" not in p.vars:
                             p.vars["node_rhythms"] = {}
-                        p.vars["node_rhythms"][str(current_node_index)] = answer
-                        print(f'DEBUG - Storing new/modified rhythm for node {current_node_index}: {answer}')
+                        p.vars["node_rhythms"][node_content] = answer
+                        print(f'DEBUG - Storing new/modified rhythm for node {node_content}: {answer}')
                         
                         # Generate audio file for the rhythm
                         try:
@@ -304,8 +343,8 @@ class SigSpaceTrial(StaticTrial):
                             # Store the audio filename for this node
                             if "node_audio_filenames" not in p.vars:
                                 p.vars["node_audio_filenames"] = {}
-                            p.vars["node_audio_filenames"][str(current_node_index)] = audio_filename
-                            print(f"DEBUG - Generated new audio for node {current_node_index}: {audio_filename}")
+                            p.vars["node_audio_filenames"][node_content] = audio_filename
+                            print(f"DEBUG - Generated new audio for node {node_content}: {audio_filename}")
                         except Exception as e:
                             raise Exception(f"Audio generation failed for rhythm '{answer}': {str(e)}")
 
@@ -480,11 +519,7 @@ class SigSpaceTrial(StaticTrial):
         except Exception as e:
             print(f"Error in get_matcher_answer: {str(e)}")
 
-    def increase_current_node(self, participant):
-        current_index = participant.vars.get("current_node_index")
-        print(f"DEBUG - Increasing node index from {current_index} to {current_index + 1} for participant {participant.id}")
-        print(f"DEBUG - Domain: {DOMAIN}, Role: {participant.vars.get('role')}")
-        participant.vars["current_node_index"] = current_index + 1
+
 
     def feedback_page(self, experiment, participant):
         if DOMAIN == "communication":
@@ -500,11 +535,17 @@ class SigSpaceTrial(StaticTrial):
                     self.definition["attempts"] = self.definition.get("attempts", 0) + 1  # Increment attempts counter
                 elif matcher_choice == director_color:
                     result = "Successful!"
-                    current_node_index = participant.vars.get("current_node_index", 0)  # Mark as completed in participant's own state
-                    participant.vars["node_completion"][str(current_node_index)] = True
+                    # Mark as completed using node content as key
+                    node_content = self.definition.get("color")
+                    participant.vars["node_completion"][node_content] = True
 
-                    if participant.vars.get("current_node_index") < len(nodes) - 1:
-                        self.increase_current_node(participant)
+                    # Check if there are any uncompleted nodes left
+                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
+                        node.definition.get("color"), False
+                    )]
+                    if uncompleted_nodes:
+                        print('skip')
+                        #self.increase_current_node(participant)
 
                 if result == "Successful!":
                     prompt = Markup(f"<strong>{result}</strong><br><br>"
@@ -523,16 +564,20 @@ class SigSpaceTrial(StaticTrial):
 
                 if matcher_choice == director_color:
                     result = "Successful!"
-                    # Mark as completed in participant's own state
-                    current_node_index = participant.vars.get("current_node_index", 0)
-                    participant.vars["node_completion"][str(current_node_index)] = True
+                    # Mark as completed using node content as key
+                    node_content = self.definition.get("color")
+                    participant.vars["node_completion"][node_content] = True
                     
-                    # Move to next node if this one is completed
-                    if participant.vars.get("current_node_index") < len(nodes) - 1:
-                        self.increase_current_node(participant)
+                    # Check if there are any uncompleted nodes left
+                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
+                        node.definition.get("color"), False
+                    )]
+                    if uncompleted_nodes:
+                        print('skip')
+                        #self.increase_current_node(participant)
                     else:
                         # All nodes completed
-                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                        print(f'DEBUG: All nodes completed')
                     print(f'DEBUG - Director sees correct choice: {matcher_choice} == {director_color}')
                 else:
                     print(f'DEBUG - Director sees wrong choice: {matcher_choice} != {director_color}')
@@ -550,42 +595,50 @@ class SigSpaceTrial(StaticTrial):
         elif DOMAIN == "music":
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
-                current_node_index = participant.vars.get("current_node_index", 0)
-                print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_index={current_node_index}")
+                node_content = self.definition.get("melody")
+                print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_content={node_content}")
                 
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")
-                    # Mark as completed in participant's own state
-                    participant.vars["node_completion"][str(current_node_index)] = True
+                    # Mark as completed using node content as key
+                    participant.vars["node_completion"][node_content] = True
 
-                    # Move to next node if this one is completed
-                    if participant.vars.get("current_node_index", 0) < len(nodes) - 1:
-                        self.increase_current_node(participant)  # todo
+                    # Check if there are any uncompleted nodes left
+                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
+                        node.definition.get("melody"), False
+                    )]
+                    if uncompleted_nodes:
+                        print('skip')
+                        #self.increase_current_node(participant)  # todo
                     else:
                         # All nodes completed
-                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                        print(f'DEBUG: All nodes completed')
                 else:  # Don't set completed flag - let the while loop continue
                     prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                             f"You did not find your partner's rhythm appealing.")
             else:  # director
                 matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
-                current_node_index = participant.vars.get("current_node_index", 0)
-                print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_index={current_node_index}")
+                node_content = self.definition.get("melody")
+                print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_content={node_content}")
                 
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"Your partner found your rhythm appealing.")
-                    # Mark as completed in participant's own state
-                    participant.vars["node_completion"][str(current_node_index)] = True
-                    print(f"DEBUG - Music director: Marking node {current_node_index} as completed")
+                    # Mark as completed using node content as key
+                    participant.vars["node_completion"][node_content] = True
+                    print(f"DEBUG - Music director: Marking node {node_content} as completed")
                     
-                    # Move to next node if this one is completed
-                    if participant.vars.get("current_node_index") < len(nodes) - 1:
-                        self.increase_current_node(participant)
+                    # Check if there are any uncompleted nodes left
+                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
+                        node.definition.get("melody"), False
+                    )]
+                    if uncompleted_nodes:
+                        print('skip')
+                        #self.increase_current_node(participant)
                     else:
                         # All nodes completed
-                        print(f'DEBUG: All nodes completed ({participant.vars["current_node_index"]} number of nodes)')
+                        print(f'DEBUG: All nodes completed')
                 else:
                     prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                             f"Your partner did not find your rhythm appealing.")
@@ -661,9 +714,11 @@ def director_message(participant):
     if "role_index" not in participant.vars:
         participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
         participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
-        participant.vars["current_node_index"] = 0
-        # Initialize participant's own completion tracking
-        participant.vars["node_completion"] = {str(i): False for i in range(len(nodes))}
+        # Initialize participant's own completion tracking with all nodes as False
+        if DOMAIN == "music":
+            participant.vars["node_completion"] = {melody: False for melody in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]}
+        elif DOMAIN == "communication":
+            participant.vars["node_completion"] = {color: False for color in color_dict.keys()}
     
     # Show role-specific instructions
     if participant.vars.get("role") == "director" or participant.vars.get("role") == "producer":
