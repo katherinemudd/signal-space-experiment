@@ -52,7 +52,7 @@ if DOMAIN == "communication":
             StaticNode(definition={
                 "director_index": 0,  # First participant will always be director
                 "color": color,
-                "matcher_choice": 'add color',
+                "matcher_choice":  'add color',
                 "attempts": 0,  # Track number of attempts for this color
                 "completed": False  # Track if this color has been completed
             })
@@ -484,11 +484,10 @@ class SigSpaceTrial(StaticTrial):
             # Get the matcher's choice
             matcher_choice = matcher_participant.vars.get("last_action")
             director_choice = director_participant.vars.get("last_action")
-            
-            print(f"DEBUG - Matcher choice: {matcher_choice}, Director choice: {director_choice}")
-            
+                        
             # Share the choices with both participants
             for participant in participants:
+                self.node.definition["matcher_choice"] = matcher_participant.vars.get("last_action")  # add color to node
                 if not hasattr(participant, 'var'):
                     participant.var = {}
                 participant.var.last_trial = {
@@ -500,13 +499,14 @@ class SigSpaceTrial(StaticTrial):
                     "action_self": participant.vars.get("last_action"),
                     "action_other": matcher_choice if participant.vars.get("role") == "director" else director_choice,
                 }
-            print(f"DEBUG - Matcher answers: matcher={matcher_choice}, director={director_choice}")
+            print(f'get_matcher_answer self node definition {self.node.definition}')  # todo: works here (matcher_choice = color)
         except Exception as e:
             print(f"Error in get_matcher_answer: {str(e)}")
 
 
 
     def feedback_page(self, experiment, participant):
+        #print(f'feedback_page self node definition {self.node.definition}')  # todo: doesn't have matcher_choice, but it does have it on line 504
         if DOMAIN == "communication":
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
@@ -541,13 +541,11 @@ class SigSpaceTrial(StaticTrial):
 
             else:  # "director"
                 matcher_choice_alt = participant.vars.get("last_trial")
-                print(f'DEBUG - matcher choice alt: {matcher_choice_alt}')
                 matcher_choice = participant.vars.get("last_trial", {}).get("action_other")  # Get the matcher's choice from last_trial
                 matcher_choice_hsl = color_dict.get(matcher_choice, [0, 0, 0])
 
                 director_color = participant.vars["director_color"]  # Use the stored director color
                 director_color_hsl = color_dict.get(director_color, [0, 0, 0])
-                print(f"DEBUG - Director feedback: matcher_choice={matcher_choice}, director_color={director_color}")
 
                 if matcher_choice == director_color:
                     result = "Successful!"
@@ -565,9 +563,7 @@ class SigSpaceTrial(StaticTrial):
                     else:
                         # All nodes completed
                         print(f'DEBUG: All nodes completed')
-                    print(f'DEBUG - Director sees correct choice: {matcher_choice} == {director_color}')
                 else:
-                    print(f'DEBUG - Director sees wrong choice: {matcher_choice} != {director_color}')
                     # Don't set completed flag - let the while loop continue
                     result = "Unsuccessful!"
 
