@@ -161,7 +161,7 @@ class SigSpaceTrial(StaticTrial):
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
         # Clear the previous trial's data
-        #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo
+        #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
 
         # Add debugging for node progression
         node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
@@ -484,7 +484,7 @@ class SigSpaceTrial(StaticTrial):
             # Get the matcher's choice
             matcher_choice = matcher_participant.vars.get("last_action")
             director_choice = director_participant.vars.get("last_action")
-                        
+
             # Share the choices with both participants
             for participant in participants:
                 self.node.definition["matcher_choice"] = matcher_participant.vars.get("last_action")  # add color to node
@@ -776,50 +776,50 @@ class Exp(psynet.experiment.Experiment):
         self.current_node_index = 0  # Start with the first node
 
     timeline = Timeline(
-        # consent(),
-        #PageMaker(requirements, time_estimate=10),
-        # CustomColorBlindnessTest(
-        #     label="color_blindness_test",
-        #     performance_threshold=1,  # Participants can make 1 mistake
-        #     time_estimate_per_trial=5.0,
-        #     hide_after=3.0,  # Image disappears after 3 seconds
-        # ),
-        # CustomAudioForcedChoiceTest(
-        #     csv_path="cats_dogs_birds.csv",
-        #     answer_options=["cat", "dog", "bird"],
-        #     performance_threshold=1,  # Participants can make 1 mistake
-        #     instructions="""
-        #         <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-        #         <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-        #         """,
-        #     question="Select the category which fits best to the played sound file.",
-        #     label="audio_forced_choice_test",
-        #     time_estimate_per_trial=8.0,
-        #     n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        # ),
-        #tapping_tasks(),
-        # dat(),
+        consent(),
+        PageMaker(requirements, time_estimate=10),
+        CustomColorBlindnessTest(
+            label="color_blindness_test",
+            performance_threshold=1,  # Participants can make 1 mistake
+            time_estimate_per_trial=5.0,
+            hide_after=3.0,  # Image disappears after 3 seconds
+        ),
+        CustomAudioForcedChoiceTest(
+            csv_path="cats_dogs_birds.csv",
+            answer_options=["cat", "dog", "bird"],
+            performance_threshold=1,  # Participants can make 1 mistake
+            instructions="""
+                <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+                <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+                """,
+            question="Select the category which fits best to the played sound file.",
+            label="audio_forced_choice_test",
+            time_estimate_per_trial=8.0,
+            n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
+        ),
+        dat(),
+        # todo: wait page
         #PageMaker(experiment_start, time_estimate=10),
-        SimpleGrouper(
-            group_type="rock_paper_scissors",
-            initial_group_size=2,
-        ),
-        CodeBlock(lambda participant: participant.set_answer("continue")),
-        PageMaker(director_message, time_estimate=10),
-        Module(
-            "experiment",
-            SigSpaceTrialMaker(
-                id_="rock_paper_scissors",
-                trial_class=SigSpaceTrial,
-                nodes=nodes,  # Pass all nodes
-                expected_trials_per_participant=len(nodes),
-                max_trials_per_participant=len(nodes),
-                allow_repeated_nodes=False,
-                sync_group_type="rock_paper_scissors",
-            ),
-        ),
-        #questionnaire(),
-        #debrief_and_feedback(),
+        # SimpleGrouper(
+        #     group_type="rock_paper_scissors",
+        #     initial_group_size=2,
+        # ),
+        # CodeBlock(lambda participant: participant.set_answer("continue")),
+        # PageMaker(director_message, time_estimate=10),
+        # Module(
+        #     "experiment",
+        #     SigSpaceTrialMaker(
+        #         id_="rock_paper_scissors",
+        #         trial_class=SigSpaceTrial,
+        #         nodes=nodes,  # Pass all nodes
+        #         expected_trials_per_participant=len(nodes),
+        #         max_trials_per_participant=len(nodes),
+        #         allow_repeated_nodes=False,
+        #         sync_group_type="rock_paper_scissors",
+        #     ),
+        # ),
+        questionnaire(),
+        debrief_and_feedback(),
         #redirect_to_prolific(),  # todo, probably need to add a button back to Prolific or a completion code
         SuccessfulEndPage(),
     )
