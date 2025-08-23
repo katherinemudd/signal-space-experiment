@@ -1,1 +1,1 @@
-web: python run.py
+web: dallinger_heroku_web
