@@ -19,7 +19,7 @@ from psynet.trial.chain import ChainTrialMaker
 from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment
-from .tapping import tapping_tasks
+# from .tapping import tapping_tasks
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
 
 # to connect the pycharm debugger, set as breakpoint: pydevd_pycharm.settrace('localhost', port=1234, stdoutToServer=True, stderrToServer=True)
