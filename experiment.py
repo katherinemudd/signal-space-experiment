@@ -22,8 +22,7 @@ from psynet.experiment import get_experiment
 # from .tapping import tapping_tasks
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
 
-# to connect the pycharm debugger, set as breakpoint: pydevd_pycharm.settrace('localhost', port=1234, stdoutToServer=True, stderrToServer=True)
-import pydevd_pycharm
+# import pydevd_pycharm  # todo: add back if running locally
 
 # from ..vertical_processing.experiment import questionnaire
 
