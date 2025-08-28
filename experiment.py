@@ -5,9 +5,9 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-from .consent import consent
-from .dat import dat
-from .questionnaire import questionnaire
+from consent import consent
+from dat import dat
+from questionnaire import questionnaire
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
