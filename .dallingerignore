@@ -8,15 +8,22 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
+
+# Git repository
+.git/
 
 # Large files that shouldn't be deployed
 source_code.zip
 *.zip
 *.tar.gz
 
-# Static files (if they're generated)
-static/
+# Binary files that cause encoding issues
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+*.gif
 
 # OS files
 .DS_Store

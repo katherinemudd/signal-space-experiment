@@ -1,4 +1,6 @@
-psynet@git+https://gitlab.com/PsyNetDev/PsyNet@master#egg=psynet
+#psynet@git+https://gitlab.com/PsyNetDev/PsyNet@master#egg=psynet
+psynet@git+https://gitlab.com/PsyNetDev/PsyNet@af7adbd4a52fc6b6b4b3cd0321462a1c66cdb92a#egg=psynet
+
 dallinger
 gunicorn
 

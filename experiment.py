@@ -5,9 +5,9 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-from consent import consent
-from dat import dat
-from questionnaire import questionnaire
+from .consent import consent
+from .dat import dat
+from .questionnaire import questionnaire
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
@@ -19,14 +19,18 @@ from psynet.trial.chain import ChainTrialMaker
 from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment
-# from .tapping import tapping_tasks
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
-
-# import pydevd_pycharm  # todo: add back if running locally
-
-# from ..vertical_processing.experiment import questionnaire
+from psynet.asset import S3Storage
 
 logger = get_logger()
+
+class CustomS3Storage(S3Storage):
+    """Custom S3Storage that doesn't require public bucket access"""
+    def prepare_for_deployment(self):
+        # Skip the public bucket requirement
+        if not self.bucket_exists(self.s3_bucket):
+            self.create_bucket(self.s3_bucket)
+        # Don't call make_bucket_public to avoid permission issues
 
 DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
 GRID_SIZE = 8            # options: 4, 8
@@ -197,6 +201,7 @@ class SigSpaceTrial(StaticTrial):
                         1,
                         content="Waiting for your partner...",
                     ),
+                    # todo: PageMaker(self.feedback_page, time_estimate=10)
                     self.feedback_page(experiment=experiment, participant=participant),
                     GroupBarrier(
                         id_="finished_trial",
@@ -486,7 +491,7 @@ class SigSpaceTrial(StaticTrial):
 
             # Share the choices with both participants
             for participant in participants:
-                self.node.definition["matcher_choice"] = matcher_participant.vars.get("last_action")  # add color to node
+                self.node.definition["matcher_choice"] = matcher_participant.vars.get("last_action")  # todo
                 if not hasattr(participant, 'var'):
                     participant.var = {}
                 participant.var.last_trial = {
@@ -688,8 +693,6 @@ def experiment_start():
         tags.p(
             "Please press 'Next' when you are ready to be paired with a participant."
         )
-
-
     return InfoPage(html, time_estimate=15)
 
 def director_message(participant):
@@ -768,6 +771,9 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
         )
 
 class Exp(psynet.experiment.Experiment):
+    # Configure S3 storage for Heroku deployment
+    # Using a custom S3Storage that doesn't require public bucket access
+    asset_storage = CustomS3Storage("sigspace-bucket", "experiment-assets")
 
     def __init__(self, session):
         super().__init__(session)
@@ -776,49 +782,49 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         consent(),
-        PageMaker(requirements, time_estimate=10),
-        CustomColorBlindnessTest(
-            label="color_blindness_test",
-            performance_threshold=1,  # Participants can make 1 mistake
-            time_estimate_per_trial=5.0,
-            hide_after=3.0,  # Image disappears after 3 seconds
-        ),
-        CustomAudioForcedChoiceTest(
-            csv_path="cats_dogs_birds.csv",
-            answer_options=["cat", "dog", "bird"],
-            performance_threshold=1,  # Participants can make 1 mistake
-            instructions="""
-                <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-                <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-                """,
-            question="Select the category which fits best to the played sound file.",
-            label="audio_forced_choice_test",
-            time_estimate_per_trial=8.0,
-            n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        ),
-        dat(),
-        # todo: wait page
-        #PageMaker(experiment_start, time_estimate=10),
-        # SimpleGrouper(
-        #     group_type="rock_paper_scissors",
-        #     initial_group_size=2,
+        # PageMaker(requirements, time_estimate=10),
+        # CustomColorBlindnessTest(
+        #     label="color_blindness_test",
+        #     performance_threshold=1,  # Participants can make 1 mistake
+        #     time_estimate_per_trial=5.0,
+        #     hide_after=3.0,  # Image disappears after 3 seconds
         # ),
-        # CodeBlock(lambda participant: participant.set_answer("continue")),
-        # PageMaker(director_message, time_estimate=10),
-        # Module(
-        #     "experiment",
-        #     SigSpaceTrialMaker(
-        #         id_="rock_paper_scissors",
-        #         trial_class=SigSpaceTrial,
-        #         nodes=nodes,  # Pass all nodes
-        #         expected_trials_per_participant=len(nodes),
-        #         max_trials_per_participant=len(nodes),
-        #         allow_repeated_nodes=False,
-        #         sync_group_type="rock_paper_scissors",
-        #     ),
+        # CustomAudioForcedChoiceTest(
+        #     csv_path="cats_dogs_birds.csv",
+        #     answer_options=["cat", "dog", "bird"],
+        #     performance_threshold=1,  # Participants can make 1 mistake
+        #     instructions="""
+        #         <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+        #         <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+        #         """,
+        #     question="Select the category which fits best to the played sound file.",
+        #     label="audio_forced_choice_test",
+        #     time_estimate_per_trial=8.0,
+        #     n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
         # ),
-        questionnaire(),
-        debrief_and_feedback(),
+        # dat(),
+        # todo: wait page, maybe add video
+        PageMaker(experiment_start, time_estimate=10),
+        SimpleGrouper(
+            group_type="rock_paper_scissors",
+            initial_group_size=2,
+        ),
+        CodeBlock(lambda participant: participant.set_answer("continue")),
+        PageMaker(director_message, time_estimate=10),
+        Module(
+            "experiment",
+            SigSpaceTrialMaker(
+                id_="rock_paper_scissors",
+                trial_class=SigSpaceTrial,
+                nodes=nodes,  # Pass all nodes
+                expected_trials_per_participant=len(nodes),
+                max_trials_per_participant=len(nodes),
+                allow_repeated_nodes=False,
+                sync_group_type="rock_paper_scissors",
+            ),
+        ),
+        #questionnaire(),
+        #debrief_and_feedback(),
         #redirect_to_prolific(),  # todo, probably need to add a button back to Prolific or a completion code
         SuccessfulEndPage(),
     )
