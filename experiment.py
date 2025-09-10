@@ -20,17 +20,8 @@ from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
-from psynet.asset import S3Storage
 
 logger = get_logger()
-
-class CustomS3Storage(S3Storage):
-    """Custom S3Storage that doesn't require public bucket access"""
-    def prepare_for_deployment(self):
-        # Skip the public bucket requirement
-        if not self.bucket_exists(self.s3_bucket):
-            self.create_bucket(self.s3_bucket)
-        # Don't call make_bucket_public to avoid permission issues
 
 DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
 GRID_SIZE = 8            # options: 4, 8
@@ -771,9 +762,6 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
         )
 
 class Exp(psynet.experiment.Experiment):
-    # Configure S3 storage for Heroku deployment
-    # Using a custom S3Storage that doesn't require public bucket access
-    asset_storage = CustomS3Storage("sigspace-bucket", "experiment-assets")
 
     def __init__(self, session):
         super().__init__(session)

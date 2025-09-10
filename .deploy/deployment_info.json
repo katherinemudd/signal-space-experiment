@@ -1,13 +1,13 @@
 {
     "redeploying_from_archive": false,
-    "mode": "live",
-    "is_local_deployment": false,
+    "mode": "debug",
+    "is_local_deployment": true,
     "is_ssh_deployment": false,
     "folder_name": "sig_space_until_correct",
     "secret": {
         "py/object": "uuid.UUID",
-        "hex": "1bb8ae6f7a664fb3b71d2f817a335555"
+        "hex": "b539252bb25048488949a028db5da244"
     },
-    "deployment_id": "sig_space_until_correct__mode=live__launch=2025-09-08--19-13-14",
+    "deployment_id": "sig_space_until_correct__mode=debug__launch=2025-09-10--16-50-53",
     "locale": "en"
 }
