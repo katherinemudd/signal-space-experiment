@@ -20,6 +20,7 @@ from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
+from .wait_video import video_wait_page
 
 logger = get_logger()
 
@@ -174,29 +175,28 @@ class SigSpaceTrial(StaticTrial):
                 join(
                     GroupBarrier(
                         id_="wait_for_trial",
-                        group_type="rock_paper_scissors",
+                        group_type="sigspace",
                     ),
                     self.director_turn(participant=participant),
                     GroupBarrier(
                         id_="wait_for_trial",
-                        group_type="rock_paper_scissors",
+                        group_type="sigspace",
                         on_release=self.save_director_answer,
                     ),
                     self.matcher_turn(participant=participant),
                     GroupBarrier(
                         id_="wait_for_trial",
-                        group_type="rock_paper_scissors",
+                        group_type="sigspace",
                         on_release=self.get_matcher_answer,
                     ),
                     WaitPage(
                         1,
                         content="Waiting for your partner...",
                     ),
-                    # todo: PageMaker(self.feedback_page, time_estimate=10)
                     self.feedback_page(experiment=experiment, participant=participant),
                     GroupBarrier(
                         id_="finished_trial",
-                        group_type="rock_paper_scissors",
+                        group_type="sigspace",
                     ),
                 ),
                 expected_repetitions=9,  # Allow up to 9 attempts per node
@@ -501,8 +501,6 @@ class SigSpaceTrial(StaticTrial):
         except Exception as e:
             print(f"Error in get_matcher_answer: {str(e)}")
 
-
-
     def feedback_page(self, experiment, participant):
         #print(f'feedback_page self node definition {self.node.definition}')  # todo: doesn't have matcher_choice, but it does have it on line 504
         if DOMAIN == "communication":
@@ -772,7 +770,7 @@ class Exp(psynet.experiment.Experiment):
         self.current_node_index = 0  # Start with the first node
 
     timeline = Timeline(
-        # consent(),
+        consent(),
         # PageMaker(requirements, time_estimate=10),
         # CustomColorBlindnessTest(
         #     label="color_blindness_test",
@@ -794,24 +792,32 @@ class Exp(psynet.experiment.Experiment):
         #     n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
         # ),
         # dat(),
-        # todo: wait page, maybe add video
-        PageMaker(experiment_start, time_estimate=10),
+
         SimpleGrouper(
-            group_type="rock_paper_scissors",
+            group_type="sigspace",
             initial_group_size=2,
         ),
+
+        GroupBarrier(
+            id_="finished_trial",
+            group_type="sigspace",
+            waiting_logic=video_wait_page(),
+        ),
+
+        PageMaker(experiment_start, time_estimate=10),
+
         CodeBlock(lambda participant: participant.set_answer("continue")),
         PageMaker(director_message, time_estimate=10),
         Module(
             "experiment",
             SigSpaceTrialMaker(
-                id_="rock_paper_scissors",
+                id_="sigspace_trial",
                 trial_class=SigSpaceTrial,
                 nodes=nodes,  # Pass all nodes
                 expected_trials_per_participant=len(nodes),
                 max_trials_per_participant=len(nodes),
                 allow_repeated_nodes=False,
-                sync_group_type="rock_paper_scissors",
+                sync_group_type="sigspace",
             ),
         ),
         #questionnaire(),
