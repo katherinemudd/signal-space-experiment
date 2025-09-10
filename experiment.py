@@ -303,11 +303,10 @@ class SigSpaceTrial(StaticTrial):
                     
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
+                    self.node.definition["director_rhythm"] = answer
+                    print(f'DEBUG - check answer {answer}')
+                    print(f'DEBUG - check answer director node {self.node.definition["director_rhythm"]}')
 
-                    if answer is None:
-                        print(f"ERROR - Director's last_action is None for node {node_content}")
-                        continue
-                    
                     # Check if we already have a rhythm for this node
                     existing_rhythm = p.vars.get("node_rhythms", {}).get(node_content)
 
@@ -329,6 +328,10 @@ class SigSpaceTrial(StaticTrial):
                             if "node_audio_filenames" not in p.vars:
                                 p.vars["node_audio_filenames"] = {}
                             p.vars["node_audio_filenames"][node_content] = audio_filename
+
+                            if "node_rhythms" not in p.vars:
+                                p.vars["node_rhythms"] = {}
+                            p.vars["node_rhythms"][node_content] = answer
                         except Exception as e:
                             raise Exception(f"Audio generation failed for rhythm '{answer}': {str(e)}")
 
@@ -769,7 +772,7 @@ class Exp(psynet.experiment.Experiment):
         self.current_node_index = 0  # Start with the first node
 
     timeline = Timeline(
-        consent(),
+        # consent(),
         # PageMaker(requirements, time_estimate=10),
         # CustomColorBlindnessTest(
         #     label="color_blindness_test",
