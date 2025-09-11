@@ -5,9 +5,9 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-from .consent import consent
-from .dat import dat
-from .questionnaire import questionnaire
+from consent import consent
+from dat import dat
+from questionnaire import questionnaire
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
@@ -20,7 +20,7 @@ from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment, experiment_route
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
-from .wait_video_old import video_wait_page
+from wait_video_old import video_wait_page
 
 logger = get_logger()
 
