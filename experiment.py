@@ -20,6 +20,7 @@ from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment, experiment_route
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
+from psynet.asset import S3Storage
 from wait_video_old import video_wait_page
 
 logger = get_logger()
@@ -763,6 +764,8 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
         )
 
 class Exp(psynet.experiment.Experiment):
+    # Configure S3 storage for static assets and generated audio files
+    asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")
 
     def __init__(self, session):
         super().__init__(session)
@@ -841,6 +844,6 @@ class Exp(psynet.experiment.Experiment):
         ),
         #questionnaire(),
         #debrief_and_feedback(),
-        #redirect_to_prolific(),  # todo, probably need to add a button back to Prolific or a completion code
+        redirect_to_prolific(),
         SuccessfulEndPage(),
     )
