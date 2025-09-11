@@ -1,1 +1,1 @@
-web: dallinger_heroku_web --workers=1 --worker-class=gevent --worker-connections=1000
+web: dallinger_heroku_web

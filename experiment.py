@@ -18,9 +18,9 @@ from psynet.trial.static import StaticNode, StaticTrial, StaticTrialMaker
 from psynet.trial.chain import ChainTrialMaker
 from psynet.trial.main import TrialMaker, TrialMakerState
 from psynet.utils import as_plain_text, get_logger
-from psynet.experiment import get_experiment
+from psynet.experiment import get_experiment, experiment_route
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
-from .wait_video import video_wait_page
+from .wait_video_old import video_wait_page
 
 logger = get_logger()
 
@@ -769,9 +769,17 @@ class Exp(psynet.experiment.Experiment):
         self.all_nodes = nodes  # Initialize the list of all nodes
         self.current_node_index = 0  # Start with the first node
 
+    @experiment_route("/participant_in_barrier/<participant_id>", methods=["GET"])
+    @classmethod
+    def participant_in_barrier(cls, participant_id):
+        from psynet.participant import Participant
+        from flask import jsonify
+        participant = Participant.query.get(participant_id)
+        return jsonify(len(participant.active_barriers) > 0)
+
     timeline = Timeline(
         consent(),
-        # PageMaker(requirements, time_estimate=10),
+        PageMaker(requirements, time_estimate=10),
         # CustomColorBlindnessTest(
         #     label="color_blindness_test",
         #     performance_threshold=1,  # Participants can make 1 mistake
@@ -798,10 +806,21 @@ class Exp(psynet.experiment.Experiment):
             initial_group_size=2,
         ),
 
+        # GroupBarrier(
+        #     id_="finished_trial",
+        #     group_type="sigspace",
+        #     waiting_logic=video_wait_page(),
+        # ),
+
         GroupBarrier(
-            id_="finished_trial",
+            id_="video_wait_barrier",
             group_type="sigspace",
-            waiting_logic=video_wait_page(),
+            waiting_logic=join(
+                InfoPage(
+                    "TEST: This should show instead of default wait page",
+                    time_estimate=30
+                )
+            ),
         ),
 
         PageMaker(experiment_start, time_estimate=10),
