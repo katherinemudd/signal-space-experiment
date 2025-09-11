@@ -732,6 +732,13 @@ def redirect_to_prolific():
         tags.p(
             """You will now be redirected directly to the prolific page.""",
         )
+        tags.script(
+            """
+            setTimeout(function() {
+                window.location.href = 'https://app.prolific.com/submissions/complete?cc=C1M8C4L6';
+            }, 2000);
+            """
+        )
 
     return InfoPage(html, time_estimate=15)
 

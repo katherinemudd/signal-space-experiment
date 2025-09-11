@@ -28,5 +28,4 @@ prolific_estimated_completion_minutes = 30
 base_payment = 6.00
 
 # Prolific-specific settings
-prolific_completion_code = C1M8C4L6
-prolific_completion_redirect = https://app.prolific.com/submissions/complete?cc=C1M8C4L6
+# Note: Completion code and redirect are handled in the experiment code, not config
