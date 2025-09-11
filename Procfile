@@ -1,1 +1,1 @@
-web: psynet heroku web
+web: psynet serve
