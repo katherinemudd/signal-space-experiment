@@ -1,1 +1,1 @@
-web: dallinger_heroku_web
+web: psynet heroku web
