@@ -12,7 +12,7 @@ def questionnaire():
                 h1("Exit questionnaire"),
                 p("Please complete the following questions about your experience and background.")
             ),
-            time_estimate=5
+            time_estimate=60,
         ),
         ModularPage(
             "other questions",
@@ -67,7 +67,7 @@ def questionnaire():
                     ],
                 },
             ),
-            time_estimate=5,
+            time_estimate=120
         ),
         ModularPage(
             "language experience",
@@ -121,6 +121,6 @@ def questionnaire():
                     ],
                 },
             ),
-            time_estimate=5,
+            time_estimate=120
         ),
     )

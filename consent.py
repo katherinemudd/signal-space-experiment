@@ -67,6 +67,6 @@ def consent():
         "consent",
         join(
             NoConsent(),
-            InfoPage(information_and_consent, time_estimate=30),
+            InfoPage(information_and_consent, time_estimate=60),
         )
     )

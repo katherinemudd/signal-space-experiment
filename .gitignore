@@ -30,3 +30,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Git directory (should already be excluded)
+.git/

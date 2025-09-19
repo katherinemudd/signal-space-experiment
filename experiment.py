@@ -5,9 +5,9 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-from consent import consent
-from dat import dat
-from questionnaire import questionnaire
+from .consent import consent
+from .dat import dat
+from .questionnaire import questionnaire
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
@@ -21,7 +21,7 @@ from psynet.utils import as_plain_text, get_logger
 from psynet.experiment import get_experiment, experiment_route
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
 from psynet.asset import S3Storage
-from wait_video_old import video_wait_page
+from .wait_video_old import video_wait_page
 
 logger = get_logger()
 
@@ -226,7 +226,7 @@ class SigSpaceTrial(StaticTrial):
                                 text_align="center"
                             ),
                             ColorCubeControl(director_color_hsl, DRUM_KIT, GRID_SIZE, initial_pattern=existing_rhythm),
-                            time_estimate=10,
+                            time_estimate=60,
                             save_answer="last_action"
                         )
                     )
@@ -241,7 +241,7 @@ class SigSpaceTrial(StaticTrial):
                                 text_align="center"
                             ),
                             DrumMachineControl(DRUM_KIT, GRID_SIZE, initial_pattern=existing_rhythm),
-                            time_estimate=10,
+                            time_estimate=60,
                             save_answer="last_action"
                         )
                     )
@@ -262,7 +262,7 @@ class SigSpaceTrial(StaticTrial):
                                 text_align="center"
                             ),
                             ColorCubeControl(director_color_hsl, DRUM_KIT, GRID_SIZE),
-                            time_estimate=10,
+                            time_estimate=60,
                             save_answer="last_action"
                         )
                     )
@@ -277,14 +277,14 @@ class SigSpaceTrial(StaticTrial):
                                 text_align="center"
                             ),
                             DrumMachineControl(DRUM_KIT, GRID_SIZE),
-                            time_estimate=10,
+                            time_estimate=60,
                             save_answer="last_action"
                         )
                     )
         else:
             return join(
                 WaitPage(
-                    5,
+                    60,
                     content='Waiting for your partner...',
                 )
             )
@@ -432,7 +432,7 @@ class SigSpaceTrial(StaticTrial):
                             arrange_vertically=False,
                             show_next_button=False
                         ),
-                        time_estimate=10,
+                        time_estimate=60,
                         save_answer="last_action"
                     )
                 else:  # DOMAIN == "music"
@@ -449,7 +449,7 @@ class SigSpaceTrial(StaticTrial):
                             arrange_vertically=False,  # Changed to horizontal layout
                             show_next_button=False
                         ),
-                        time_estimate=10,
+                        time_estimate=60,
                         save_answer="last_action"
                     )
             except Exception as e:
@@ -461,7 +461,7 @@ class SigSpaceTrial(StaticTrial):
         else:  # director sees this
             return join(
                 WaitPage(
-                    5,
+                    60,
                     content='Waiting for your partner...',
                 )
             )
@@ -631,7 +631,7 @@ class SigSpaceTrial(StaticTrial):
                 text=Markup(f"{prompt}<style>#next-button {{ display: block; margin: 20px auto; background-color: black !important; border-color: black !important; }}</style>"),
                 text_align="center"
             ),
-            time_estimate=5,
+            time_estimate=60,
             show_next_button=True
         )
 
@@ -662,7 +662,7 @@ def requirements():
             "If you satisfy these requirements, please press 'Next' to begin the experiment. Thank you for taking part in our experiment! If you are not able to satisfy these requirements currently, please exit the experiment."
         )
 
-    return InfoPage(html, time_estimate=15)
+    return InfoPage(html, time_estimate=60)
 
 def experiment_start():
     html = tags.div()
@@ -686,7 +686,7 @@ def experiment_start():
         tags.p(
             "Please press 'Next' when you are ready to be paired with a participant."
         )
-    return InfoPage(html, time_estimate=15)
+    return InfoPage(html, time_estimate=60)
 
 def director_message(participant):
     """Show role-specific instructions before the experiment starts"""
@@ -713,7 +713,7 @@ def director_message(participant):
                 tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
                 tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
             tags.p("Press 'Next' when you are ready to begin.")
-        return InfoPage(html, time_estimate=10)
+        return InfoPage(html, time_estimate=60)
 
 def debrief_and_feedback():
     return ModularPage(
@@ -723,7 +723,7 @@ def debrief_and_feedback():
         <p>Thank you for participating in this study. The data you have submitted will be used to better understand the relationship between (divergent) creativity, exploration and success on the musical or communication task. Your data will be kept strictly anonymous. If you would like to provide feedback on your experience with this experiment, please type it in the box below.</p>
         """),
         TextControl(one_line=False),
-        time_estimate=5,
+        time_estimate=60
     )
 
 def redirect_to_prolific():
@@ -740,7 +740,7 @@ def redirect_to_prolific():
             """
         )
 
-    return InfoPage(html, time_estimate=15)
+    return InfoPage(html, time_estimate=60)
 
 class CustomColorBlindnessTest(ColorBlindnessTest):  # Custom ColorBlindnessTest with custom introduction
     @property
@@ -754,7 +754,7 @@ class CustomColorBlindnessTest(ColorBlindnessTest):  # Custom ColorBlindnessTest
                 tags.p(f"This image will disappear after {self.hide_after} seconds."),
                 tags.p("You must enter the number that you see into the text box.")
             ),
-            time_estimate=10,
+            time_estimate=10
         )
 
 class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedChoiceTest with custom introduction
@@ -767,7 +767,7 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
                 tags.p("In each trial, you will hear a sound of an animal. Which animal does this sound come from?"),
                 tags.p("Select the category which fits best to the played sound file.")
             ),
-            time_estimate=10,
+            time_estimate=10
         )
 
 class Exp(psynet.experiment.Experiment):
@@ -789,48 +789,31 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         consent(),
-        PageMaker(requirements, time_estimate=10),
-        # CustomColorBlindnessTest(
-        #     label="color_blindness_test",
-        #     performance_threshold=1,  # Participants can make 1 mistake
-        #     time_estimate_per_trial=5.0,
-        #     hide_after=3.0,  # Image disappears after 3 seconds
-        # ),
-        # CustomAudioForcedChoiceTest(
-        #     csv_path="cats_dogs_birds.csv",
-        #     answer_options=["cat", "dog", "bird"],
-        #     performance_threshold=1,  # Participants can make 1 mistake
-        #     instructions="""
-        #         <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-        #         <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-        #         """,
-        #     question="Select the category which fits best to the played sound file.",
-        #     label="audio_forced_choice_test",
-        #     time_estimate_per_trial=8.0,
-        #     n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        # ),
-        # dat(),
+        PageMaker(requirements, time_estimate=60),
+        CustomColorBlindnessTest(
+            label="color_blindness_test",
+            performance_threshold=1,  # Participants can make 1 mistake
+            time_estimate_per_trial=5.0,
+            hide_after=3.0,  # Image disappears after 3 seconds
+        ),
+        CustomAudioForcedChoiceTest(
+            csv_path="cats_dogs_birds.csv",
+            answer_options=["cat", "dog", "bird"],
+            performance_threshold=1,  # Participants can make 1 mistake
+            instructions="""
+                <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+                <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+                """,
+            question="Select the category which fits best to the played sound file.",
+            label="audio_forced_choice_test",
+            time_estimate_per_trial=8.0,
+            n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
+        ),
+        dat(),
 
         SimpleGrouper(
             group_type="sigspace",
             initial_group_size=2,
-        ),
-
-        # GroupBarrier(
-        #     id_="finished_trial",
-        #     group_type="sigspace",
-        #     waiting_logic=video_wait_page(),
-        # ),
-
-        GroupBarrier(
-            id_="video_wait_barrier",
-            group_type="sigspace",
-            waiting_logic=join(
-                InfoPage(
-                    "TEST: This should show instead of default wait page",
-                    time_estimate=30
-                )
-            ),
         ),
 
         PageMaker(experiment_start, time_estimate=10),
@@ -849,8 +832,8 @@ class Exp(psynet.experiment.Experiment):
                 sync_group_type="sigspace",
             ),
         ),
-        #questionnaire(),
-        #debrief_and_feedback(),
+        questionnaire(),
+        debrief_and_feedback(),
         redirect_to_prolific(),
         SuccessfulEndPage(),
     )

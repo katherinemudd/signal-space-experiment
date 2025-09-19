@@ -1,1 +1,1 @@
-web: psynet debug heroku
+web: dallinger_heroku_web

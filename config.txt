@@ -5,7 +5,8 @@ contact_email_on_error = your-email@example.com
 organization_name = Your Organization
 
 # Recruitment Configuration
-recruiter = prolific
+recruiter = debug
+# after: 683714d837a2079c1f163c1b
 currency = $
 wage_per_hour = 12.0
 

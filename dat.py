@@ -86,5 +86,5 @@ def dat():
                 ],
             },
         ),
-        time_estimate=5,
+        time_estimate=60
     )
