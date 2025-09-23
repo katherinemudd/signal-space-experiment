@@ -1,3 +1,17 @@
 __pycache__/
 .git/
 *.pyc
+psynet-env/
+docker/
+snapshots/
+source_code.zip
+.DS_Store
+*.zip
+*.so
+*.dylib
+*.pyd
+*.egg-info/
+*.whl
+*.tar.gz
+*.tar.bz2
+*.tar.xz
