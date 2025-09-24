@@ -1,0 +1,28 @@
+{# We originally called this page 'layout.html'. However there seems to be a bug with Dallinger #}
+{# whereby it is not possible to override the built-in layout.html using the extra_files method. #}
+{# We therefore have to give this base template a different name. We should investigate this bug further. #}
+
+{% extends "base/layout.html" %}
+{% include "theme.html" %}
+
+{% block scripts %}
+    {{ super() }}
+
+    {% if participant is defined %}
+        <script>
+            {
+
+                // The built-in dallinger.identity object shares state between other windows on the same computer,
+                // which is dangerous. We therefore replace it with information that we know to be correct
+                // from the back-end.
+                dallinger.identity = {
+                    participantId: {{ participant.id }},
+                    assignmentId: "{{ participant.assignment_id }}",
+                    hitId: "{{ participant.hit_id }}",
+                    uniqueId: "{{ participant.unique_id }}",
+                    workerId: "{{ participant.worker_id }}"
+                }
+            }
+        </script>
+    {% endif %}
+{% endblock %}

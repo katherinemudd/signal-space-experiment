@@ -16,7 +16,6 @@ source_code.zip
 *.tar.gz
 
 # Static files (if they're generated)
-static/
 
 # OS files
 .DS_Store
