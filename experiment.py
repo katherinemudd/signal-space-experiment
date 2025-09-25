@@ -735,7 +735,7 @@ def redirect_to_prolific():
         tags.script(
             """
             setTimeout(function() {
-                window.location.href = 'https://app.prolific.com/submissions/complete?cc=YOUR_COMPLETION_CODE';
+                window.location.href = 'https://app.prolific.com/submissions/complete?cc=CQCDYRO7';
             }, 2000);
             """
         )
