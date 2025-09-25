@@ -1,8 +1,8 @@
 [Config]
 title = "Signaling Space Experiment (Chrome browser, 30 minutes to complete)"
 description = "A study on communication and music. Please use a Chrome browser in incognito mode. We keep track of how much money you earn as you progress through the experiment; this means that if the experiment has to end early (e.g. equipment problems) we know how much to pay you. This number will be displayed at the bottom of the screen during the experiment. If you finish the experiment but time out, don't worry, we will approve your experiment manually."
-contact_email_on_error = katherine.mudd@stonybrook.edu
-organization_name = Stony Brook University
+contact_email_on_error = your-actual-email@example.com
+organization_name = Your Actual Organization Name
 
 # Recruitment Configuration
 recruiter = cli
@@ -14,7 +14,7 @@ wage_per_hour = 12.0
 heroku_region = us
 dyno_type = standard-1x
 database_size = essential-0
-num_dynos_web = 1
+num_dynos_web = 2
 num_dynos_worker = 0
 
 [Prolific]

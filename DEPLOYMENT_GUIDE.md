@@ -1,10 +1,11 @@
 # Deployment Guide
 
-## Prerequisites
+## Prep
 
 1. **AWS Account**: Set up an AWS account and create an S3 bucket
 2. **Heroku Account**: Create a Heroku account
 3. **Prolific Academic Account**: Set up a Prolific Academic researcher account
+4. **PsyNet code on local git**
 
 ## AWS S3 Setup
 
