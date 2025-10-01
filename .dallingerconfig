@@ -1,8 +1,0 @@
-[aws]
-aws_access_key_id = AKIA3LET6CYWAPAVHEG6
-aws_secret_access_key = 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
-aws_region = us-east-1
-
-[Email Access]
-dallinger_email_address = kath.mudd@gmail.com
-dallinger_email_password = dallydally77
