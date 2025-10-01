@@ -1,14 +1,14 @@
 [Config]
 title = "Signaling Space Experiment (Chrome browser, 30 minutes to complete)"
 description = "A study on communication and music. Please use a Chrome browser in incognito mode. We keep track of how much money you earn as you progress through the experiment; this means that if the experiment has to end early (e.g. equipment problems) we know how much to pay you. This number will be displayed at the bottom of the screen during the experiment. If you finish the experiment but time out, don't worry, we will approve your experiment manually."
-contact_email_on_error = your-email@example.com
-organization_name = Your Organization
+contact_email_on_error = katherine.mudd@stonybrook.edu
+organization_name = SBU
 
 # Recruitment Configuration
-recruiter = cli
+recruiter = prolific
 # after: 683714d837a2079c1f163c1b
-currency = $
-wage_per_hour = 12.0
+# currency = $
+# wage_per_hour = 12.0
 
 # Heroku Configuration
 heroku_region = us
@@ -23,13 +23,13 @@ clock_on = true
 [Prolific]
 # Setting `auto_recruit = false` means that PsyNet won't recruit participants itself,
 # you'll instead control recruitment via the Prolific interface.
-auto_recruit = true
+auto_recruit = false
 
 # When recruiting with Prolific we typically set a small base payment which we then supplement
 # with bonus for time spent on the task.
-prolific_estimated_completion_minutes = 30
+# prolific_estimated_completion_minutes = 30
 # 12 dollars an hour -> 20 cents per minute
-base_payment = 6.00
+# base_payment = 6.00
 
 # Prolific-specific settings
 # Note: Completion code and redirect are handled in the experiment code, not config
