@@ -7,8 +7,8 @@ organization_name = SBU
 # Recruitment Configuration
 recruiter = prolific
 # after: 683714d837a2079c1f163c1b
-# currency = $
-# wage_per_hour = 12.0
+currency = $
+wage_per_hour = 12.0
 
 # Heroku Configuration
 heroku_region = us
@@ -21,15 +21,9 @@ num_dynos_worker = 0
 clock_on = true
 
 [Prolific]
-# Setting `auto_recruit = false` means that PsyNet won't recruit participants itself,
-# you'll instead control recruitment via the Prolific interface.
 auto_recruit = false
-
-# When recruiting with Prolific we typically set a small base payment which we then supplement
-# with bonus for time spent on the task.
-# prolific_estimated_completion_minutes = 30
-# 12 dollars an hour -> 20 cents per minute
-# base_payment = 6.00
-
-# Prolific-specific settings
+prolific_estimated_completion_minutes=30
+base_payment=6.00
+prolific_workspace=683714d837a2079c1f163c1b
+prolific_project=Pilot
 # Note: Completion code and redirect are handled in the experiment code, not config
