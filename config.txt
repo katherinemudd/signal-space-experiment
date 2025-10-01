@@ -23,7 +23,7 @@ clock_on = true
 [Prolific]
 # Setting `auto_recruit = false` means that PsyNet won't recruit participants itself,
 # you'll instead control recruitment via the Prolific interface.
-auto_recruit = false
+auto_recruit = true
 
 # When recruiting with Prolific we typically set a small base payment which we then supplement
 # with bonus for time spent on the task.
