@@ -5,7 +5,7 @@ contact_email_on_error = katherine.mudd@stonybrook.edu
 organization_name = SBU
 
 # Recruitment Configuration
-recruiter = 683714d837a2079c1f163c1b  # idk if this works
+recruiter = Prolific
 currency = $
 wage_per_hour = 12.0
 
