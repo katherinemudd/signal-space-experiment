@@ -1,0 +1,36 @@
+# Ignore binary files that cause Unicode errors
+*.pyc
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.ico
+*.exe
+*.zip
+__pycache__/
+psynet-env/
+psynet-env-official/
+*.cpython-*.pyc
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Ignore static assets and data files
+static/images/
+static/audio/
+static/figs/
+static/libraries/
+static/repp/
+static/generated_sounds/
+static/vocabtest/
+static/vis@*/
+
+# Ignore snapshots and archives
+snapshots/
+*.zip
+
+# Ignore CSV files with non-UTF-8 content
+*.csv
