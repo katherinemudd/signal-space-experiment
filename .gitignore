@@ -12,7 +12,6 @@ __pycache__/
 
 # Large files that shouldn't be deployed
 source_code.zip
-*.zip
 *.tar.gz
 
 # Static files (if they're generated)
