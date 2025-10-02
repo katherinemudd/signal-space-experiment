@@ -814,6 +814,7 @@ class Exp(psynet.experiment.Experiment):
         SimpleGrouper(
             group_type="sigspace",
             initial_group_size=2,
+            max_wait_time=300,
         ),
 
         PageMaker(experiment_start, time_estimate=10),
