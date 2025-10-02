@@ -5,7 +5,7 @@ contact_email_on_error = katherine.mudd@stonybrook.edu
 organization_name = SBU
 
 # Recruitment Configuration
-#recruiter = prolific
+recruiter = prolific
 #currency = $
 #wage_per_hour = 12.0
 
@@ -23,7 +23,8 @@ clock_on = true
 #auto_recruit = false
 #prolific_estimated_completion_minutes=30
 #base_payment=6.00
-#prolific_workspace=683714d837a2079c1f163c1b   #68c2f20013251c8c6777bbdc could try this!
-#prolific_project=Pilot
+prolific_workspace=683714d837a2079c1f163c1b
+prolific_project=Pilot
+prolific_api_token=HXBxXOmDfb18z19h8QL1E3HdgBwBHsR-0aLjDauzNxveptPaGyc58N4wQ069XFyudjBANPyGhdCP5BRIXjYnIfyjZU9db7uNXNQyNB9caA0WfgJ-abLzR2O7
 
 # Note: Completion code and redirect are handled in the experiment code, not config
