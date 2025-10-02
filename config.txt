@@ -4,11 +4,6 @@ description = "A study on communication and music. Please use a Chrome browser i
 contact_email_on_error = katherine.mudd@stonybrook.edu
 organization_name = SBU
 
-# Recruitment Configuration
-recruiter = prolific
-#currency = $
-#wage_per_hour = 12.0
-
 # Heroku Configuration
 heroku_region = us
 dyno_type = standard-1x
@@ -20,11 +15,13 @@ num_dynos_worker = 0
 clock_on = true
 
 [Prolific]
+recruiter = prolific
+currency = $
+wage_per_hour = 12.0
 #auto_recruit = false
-#prolific_estimated_completion_minutes=30
-#base_payment=6.00
+prolific_estimated_completion_minutes=30
+base_payment=6.00
 prolific_workspace=683714d837a2079c1f163c1b
 prolific_project=Pilot
-prolific_api_token=HXBxXOmDfb18z19h8QL1E3HdgBwBHsR-0aLjDauzNxveptPaGyc58N4wQ069XFyudjBANPyGhdCP5BRIXjYnIfyjZU9db7uNXNQyNB9caA0WfgJ-abLzR2O7
 
 # Note: Completion code and redirect are handled in the experiment code, not config
