@@ -154,9 +154,7 @@ eventually need to add back all those image files etc.
 - Remember to tear down Heroku resources to avoid charges
 
 
-
-
 For testing locally
-recruiter = cli
-# asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+config.txt: recruiter = prolific => recruiter = cli
+experiment.py: # asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
