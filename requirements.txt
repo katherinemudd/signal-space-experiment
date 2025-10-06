@@ -3,6 +3,7 @@ psynet@git+https://gitlab.com/PsyNetDev/PsyNet@af7adbd4a52fc6b6b4b3cd0321462a1c6
 
 dallinger==11.2.0  # lower dallinger version than on system, but PsyNet uses this
 gunicorn
+scipy
 
 # Alternatively, you can use one of the following syntaxes to specify a custom PsyNet version
 # psynet@git+https://gitlab.com/PsyNetDev/PsyNet@v10.4.0#egg=psynet

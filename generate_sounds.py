@@ -101,10 +101,6 @@ def generate_pattern_audio(pattern, grid_size, kit_type):
 
 def generate_audio_file(pattern, grid_size, kit_type, output_dir='static/generated_sounds'):
     """Generate a single audio file from a rhythm pattern."""
-    # Get absolute path for output directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(current_dir, output_dir)
-    
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     print(f'Output directory: {output_dir}')
@@ -184,12 +180,3 @@ def parse_and_generate_audio(director_sound_str):
     # Generate the audio file
     return generate_audio_file(pattern, grid_size, kit_type)
 
-
-if __name__ == "__main__":
-    pattern = "hihat_1100_snare_0000_kick_0000"
-    print(f"Generating audio for pattern: {pattern}")
-    try:
-        filename = parse_and_generate_audio(pattern)
-        print(f"Successfully generated: {filename}")
-    except Exception as e:
-        print(f"Error generating pattern: {str(e)}")
