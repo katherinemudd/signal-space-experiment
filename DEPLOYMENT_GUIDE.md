@@ -23,7 +23,7 @@ written using a combination of
    ```
 
 ## Environment Variables from AWS -> Heroku
-Set these environment variables in Heroku:
+Set these environment variables in Heroku (do NOT put them in file and push to git!):
 
 ```bash
 # AWS Configuration
@@ -34,13 +34,6 @@ AWS_DEFAULT_REGION=us-east-1
 # Prolific Configuration
 PROLIFIC_API_TOKEN=your_prolific_api_token
 ```
-
-## Update Configuration
-
-1. Update `config.txt` with your actual email and organization
-2. Update the completion code in `config.txt`
-3. Adjust payment amounts as needed
-
 
 ## Test code locally and link to Heroku
 make sure the experiment is running locally
@@ -73,6 +66,11 @@ export SKIP_VERSION_CHECK=1
 export SKIP_TODO_CHECK=1
 ```
 
+https://dlgr-sig-space-9e9bd574c232.herokuapp.com/ad?generate_tokens=1
+https://dlgr-sig-space-365837951396.herokuapp.com/ad?generate_tokens=1
+
+
+only match in study ID
 
 ###
 debug deployment (test first)
@@ -154,3 +152,11 @@ eventually need to add back all those image files etc.
 
 - Export data when experiment is complete
 - Remember to tear down Heroku resources to avoid charges
+
+
+
+
+For testing locally
+recruiter = cli
+# asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+

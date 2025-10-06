@@ -144,12 +144,19 @@ def parse_and_generate_audio(director_sound_str):
     """
     print(f'Parsing director sound string: {director_sound_str}')
     
+    # Remove trailing underscore if present (drum machine outputs with trailing underscore)
+    if director_sound_str.endswith('_'):
+        director_sound_str = director_sound_str[:-1]
+        print(f'Removed trailing underscore: {director_sound_str}')
+    
     # Extract patterns
     patterns = {}
     for drum in ['hihat', 'snare', 'kick']:
         pattern_match = re.search(f'{drum}_([01]+)', director_sound_str)
+        print(f'DEBUG: Looking for {drum}, pattern_match: {pattern_match}')
         if pattern_match:
             patterns[drum] = pattern_match.group(1)
+            print(f'DEBUG: Found {drum} pattern: {pattern_match.group(1)}')
     
     print(f'Extracted patterns: {patterns}')
     

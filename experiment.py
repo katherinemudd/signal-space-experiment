@@ -8,6 +8,7 @@ import psynet.experiment
 from .consent import consent
 from .dat import dat
 from .questionnaire import questionnaire
+from .generate_sounds import parse_and_generate_audio
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
@@ -156,9 +157,6 @@ class SigSpaceTrial(StaticTrial):
             participant.vars["current_color"] = self.definition["color"]
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
-        # Clear the previous trial's data
-        #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
-
         # Add debugging for node progression
         node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
         print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_content={node_content}, domain={DOMAIN}")
@@ -180,13 +178,13 @@ class SigSpaceTrial(StaticTrial):
                     ),
                     self.director_turn(participant=participant),
                     GroupBarrier(
-                        id_="wait_for_trial",
+                        id_="director_finished_trial",
                         group_type="sigspace",
                         on_release=self.save_director_answer,
                     ),
                     self.matcher_turn(participant=participant),
                     GroupBarrier(
-                        id_="wait_for_trial",
+                        id_="matcher_finished_trial",
                         group_type="sigspace",
                         on_release=self.get_matcher_answer,
                     ),
@@ -196,7 +194,7 @@ class SigSpaceTrial(StaticTrial):
                     ),
                     self.feedback_page(experiment=experiment, participant=participant),
                     GroupBarrier(
-                        id_="finished_trial",
+                        id_="trial_completed",
                         group_type="sigspace",
                     ),
                 ),
@@ -290,6 +288,7 @@ class SigSpaceTrial(StaticTrial):
             )
 
     def save_director_answer(self, participants: List[Participant]):
+            print(f"DEBUG - save_director_answer: {self.definition}")
             for p in participants:
                 if p.vars.get("role") == "director":
                     # Get the current node content from the trial definition
@@ -305,8 +304,6 @@ class SigSpaceTrial(StaticTrial):
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
                     self.node.definition["director_rhythm"] = answer
-                    print(f'DEBUG - check answer {answer}')
-                    print(f'DEBUG - check answer director node {self.node.definition["director_rhythm"]}')
 
                     # Check if we already have a rhythm for this node
                     existing_rhythm = p.vars.get("node_rhythms", {}).get(node_content)
@@ -322,7 +319,6 @@ class SigSpaceTrial(StaticTrial):
 
                         # Generate audio file for the rhythm
                         try:
-                            from generate_sounds import parse_and_generate_audio
                             audio_filename = parse_and_generate_audio(answer)
                             
                             # Store the audio filename for this node
@@ -576,8 +572,7 @@ class SigSpaceTrial(StaticTrial):
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
                 #node_content = self.definition.get("melody")
-                #print(f"DEBUG - Music matcher feedback: choice={matcher_choice}, node_content={node_content}")
-                
+
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")
@@ -601,16 +596,14 @@ class SigSpaceTrial(StaticTrial):
             else:  # director
                 matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
                 #node_content = self.definition.get("melody")
-                #print(f"DEBUG - Music director feedback: choice={matcher_choice}, node_content={node_content}")
-                
+
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"Your partner found your rhythm appealing.")
                     # Mark as completed using node content as key
                     node_content = self.definition.get("melody")
                     participant.vars["node_completion"][node_content] = True
-                    print(f"DEBUG - Music director: Marking node {node_content} as completed")
-                    
+
                     # Check if there are any uncompleted nodes left
                     uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
                         node.definition.get("melody"), False
@@ -771,9 +764,9 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
         )
 
 class Exp(psynet.experiment.Experiment):
-    # Configure S3 storage for static assets and generated audio files
+    # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
-    asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")
+    # asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
     def __init__(self, session):
         super().__init__(session)
@@ -790,27 +783,27 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         consent(),
-        PageMaker(requirements, time_estimate=60),
-        CustomColorBlindnessTest(
-            label="color_blindness_test",
-            performance_threshold=1,  # Participants can make 1 mistake
-            time_estimate_per_trial=5.0,
-            hide_after=3.0,  # Image disappears after 3 seconds
-        ),
-        CustomAudioForcedChoiceTest(
-            csv_path="cats_dogs_birds.csv",
-            answer_options=["cat", "dog", "bird"],
-            performance_threshold=1,  # Participants can make 1 mistake
-            instructions="""
-                <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-                <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-                """,
-            question="Select the category which fits best to the played sound file.",
-            label="audio_forced_choice_test",
-            time_estimate_per_trial=8.0,
-            n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        ),
-        dat(),
+        # PageMaker(requirements, time_estimate=60),
+        # CustomColorBlindnessTest(
+        #     label="color_blindness_test",
+        #     performance_threshold=1,  # Participants can make 1 mistake
+        #     time_estimate_per_trial=5.0,
+        #     hide_after=3.0,  # Image disappears after 3 seconds
+        # ),
+        # CustomAudioForcedChoiceTest(
+        #     csv_path="cats_dogs_birds.csv",
+        #     answer_options=["cat", "dog", "bird"],
+        #     performance_threshold=1,  # Participants can make 1 mistake
+        #     instructions="""
+        #         <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+        #         <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+        #         """,
+        #     question="Select the category which fits best to the played sound file.",
+        #     label="audio_forced_choice_test",
+        #     time_estimate_per_trial=8.0,
+        #     n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
+        # ),
+        # dat(),
 
         SimpleGrouper(
             group_type="sigspace",
