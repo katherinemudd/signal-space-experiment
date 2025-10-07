@@ -3,6 +3,9 @@ import numpy as np
 from scipy.io import wavfile
 import re
 
+from psynet.asset import S3Storage
+asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+
 # Constants
 SAMPLE_RATE = 44100
 BASE_STEPS = 16  # matches drum_machine.html internal resolution

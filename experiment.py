@@ -319,6 +319,7 @@ class SigSpaceTrial(StaticTrial):
 
                         # Generate audio file for the rhythm
                         try:
+                            print("DEBUG - try generate audio for rhythm")
                             audio_filename = parse_and_generate_audio(answer)
                             
                             # Store the audio filename for this node
@@ -341,7 +342,6 @@ class SigSpaceTrial(StaticTrial):
 
     def matcher_turn(self, participant):
         if participant.vars.get("role") == "matcher":
-
             try:
                 # Retrieve the director's answer from participant vars
                 director_answer = participant.vars.get("director_answer")
@@ -783,27 +783,27 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         consent(),
-        PageMaker(requirements, time_estimate=60),
-        CustomColorBlindnessTest(
-             label="color_blindness_test",
-             performance_threshold=1,  # Participants can make 1 mistake
-             time_estimate_per_trial=5.0,
-             hide_after=3.0,  # Image disappears after 3 seconds
-        ),
-        CustomAudioForcedChoiceTest(
-             csv_path="cats_dogs_birds.csv",
-             answer_options=["cat", "dog", "bird"],
-             performance_threshold=1,  # Participants can make 1 mistake
-             instructions="""
-                 <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-                 <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-                 """,
-             question="Select the category which fits best to the played sound file.",
-             label="audio_forced_choice_test",
-             time_estimate_per_trial=8.0,
-             n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        ),
-        dat(),
+        # PageMaker(requirements, time_estimate=60),
+        # CustomColorBlindnessTest(
+        #      label="color_blindness_test",
+        #      performance_threshold=1,  # Participants can make 1 mistake
+        #      time_estimate_per_trial=5.0,
+        #      hide_after=3.0,  # Image disappears after 3 seconds
+        # ),
+        # CustomAudioForcedChoiceTest(
+        #      csv_path="cats_dogs_birds.csv",
+        #      answer_options=["cat", "dog", "bird"],
+        #      performance_threshold=1,  # Participants can make 1 mistake
+        #      instructions="""
+        #          <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+        #          <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+        #          """,
+        #      question="Select the category which fits best to the played sound file.",
+        #      label="audio_forced_choice_test",
+        #      time_estimate_per_trial=8.0,
+        #      n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
+        # ),
+        # dat(),
 
         SimpleGrouper(
             group_type="sigspace",

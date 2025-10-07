@@ -10,7 +10,7 @@ dyno_type = performance-m
 database_size = essential-0
 num_dynos_web = 2
 # maybe increase if running more than 10 participants (1 per 10-20)
-num_dynos_worker = 0
+num_dynos_worker = 2
 
 [Server]
 clock_on = true
