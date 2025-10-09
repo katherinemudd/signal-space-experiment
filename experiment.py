@@ -288,8 +288,7 @@ class SigSpaceTrial(StaticTrial):
             )
 
     def save_director_answer(self, participants: List[Participant]):
-            print(f"DEBUG - save_director_answer: {self.definition}")
-            for p in participants:
+        for p in participants:
                 if p.vars.get("role") == "director":
                     # Get the current node content from the trial definition
                     # We need to access the trial definition through the experiment
@@ -297,9 +296,6 @@ class SigSpaceTrial(StaticTrial):
                     current_trial = p.current_trial
                     if current_trial:
                         node_content = current_trial.definition.get("color") if DOMAIN == "communication" else current_trial.definition.get("melody")
-                    else:
-                        print("ERROR - No current trial found")
-                        continue
                     
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
@@ -345,7 +341,7 @@ class SigSpaceTrial(StaticTrial):
             try:
                 # Retrieve the director's answer from participant vars
                 director_answer = participant.vars.get("director_answer")
-                audio_filename = participant.vars.get("audio_filename")
+                audio_filename = parse_and_generate_audio(director_answer)  # generate here (instead of reading file from director)
 
                 # Create audio player HTML
                 audio_player_html = f"""
@@ -766,7 +762,7 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
 class Exp(psynet.experiment.Experiment):
     # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
-    asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+    #asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
     def __init__(self, session):
         super().__init__(session)

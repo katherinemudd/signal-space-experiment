@@ -10,13 +10,14 @@ dyno_type = performance-m
 database_size = essential-0
 num_dynos_web = 2
 # maybe increase if running more than 10 participants (1 per 10-20)
-num_dynos_worker = 2
+num_dynos_worker = 0
+# potentially increase to 1 for file uploads
 
 [Server]
 clock_on = true
 
 [Prolific]
-recruiter = prolific
+recruiter = cli
 # if running locally, change to cli
 currency = $
 wage_per_hour = 12.0

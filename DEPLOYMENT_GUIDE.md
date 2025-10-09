@@ -1,8 +1,7 @@
 # Deployment Guide
 
 written using a combination of 
-- cursor
-- https://devcenter.heroku.com/articles/git
+- cursor & https://devcenter.heroku.com/articles/git
 
 ## Prep
 
@@ -60,86 +59,18 @@ if it is linked then will show output (heroku + git link + fetch/push)
 psynet deploy heroku --app sig-space
 ```
 
-problems with versions (conflicting computer and PsyNet dallinger) and existing todos so running the following
+if problems with versions (conflicting computer and PsyNet dallinger) and existing todos so running the following
 ```bash
 export SKIP_VERSION_CHECK=1
 export SKIP_TODO_CHECK=1
 ```
 
+for testing, get link like https://dlgr-sig-space-9e9bd574c232.herokuapp.com/
+add ad?generate_tokens=1 which yields values for participant_id, study_id and .._id
 https://dlgr-sig-space-9e9bd574c232.herokuapp.com/ad?generate_tokens=1
-https://dlgr-sig-space-365837951396.herokuapp.com/ad?generate_tokens=1
+for testing in a dyad: only match in study ID
 
 
-only match in study ID
-
-###
-debug deployment (test first)
-```bash
-psynet debug heroku --app sig-space
-````
-
-ran into issues with "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 81: invalid start byte"
-to fix this, trying:
-```bash
-rm -f ./snapshots/sigspace-experimen-code.zip ./snapshots/sigspace-experiment-code.zip ./source_code.zip
-rm -rf ./__pycache__
-```
-
-to try to solve this, temporarily move potentially problematic files into another directory (temp_backup)
-```bash
-mkdir -p temp_backup
-mv static/vocabtest temp_backup/
-mv static/libraries temp_backup/
-mv static/vis@* temp_backup/ 2>/dev/null || true
-mv static/images temp_backup/
-mv static/audio temp_backup/
-mv static/figs temp_backup/
-mv static/repp temp_backup/
-mv static/generated_sounds temp_backup/
-mv static/logo.png static/favicon.png static/logo_image_only.png temp_backup/
-rm -rf __pycache__ && rm -f deploy.sh
-```
-
-database template needed
-and make sure it is added (I think was blocked in the ignore file bc of .zip)
-idk trying lots of things (incl. manually pushing to git which apparently should be handled by dallinger?? so idk)
-```bash
-mkdir -p .deploy && echo '{"version": "1.0", "data": {}}' > .deploy/database_template.zip
-git add .deploy/ && git status --porcelain | grep deploy
-git add -f .deploy/database_template.zip && git commit -m "add database template file" &
-& git push heroku main
-
-```
-
-instead of just ```deploy heroku --app sig-space``` I need to add ```./psynet-env/bin/psynet``` in front 
-to specify my venv (i/o the system-wide PsyNet installation)
-```bash
-./psynet-env/bin/psynet deploy heroku --app sig-space
-```
-
-live deployment
-```bash
-psynet deploy heroku --app your-app-name
-```
-
-
-if need to debug/deploy (again), first need to destroy app with same name
-```bash
-heroku apps:destroy dlgr-sig-space --confirm dlgr-sig-space
-```
-
-once destroyed, can run
-```bash
-SKIP_TODO_CHECK=1 SKIP_CHECK_PSYNET_VERSION_REQUIREMENT=1 SKIP_VERSION_CHECK=1 ./psynet-env/bin/psynet deploy heroku --app sig-space
-```
-
-build was failing because it didn't have a database file; initialize the db
-```bash
-heroku run "python -c 'from dallinger.db import init_db; init_db()'" --app dlgr-sig-space
-
-```
-
-eventually need to add back all those image files etc.
 
 ## Step 5: Prolific Setup
 
@@ -148,13 +79,18 @@ eventually need to add back all those image files etc.
 3. Configure completion redirect URL
 4. Set up participant screening criteria
 
-## Notes
+## Run experiment from Prolific
 
-- Export data when experiment is complete
-- Remember to tear down Heroku resources to avoid charges
+When experiment is done, collect data
+try:
+```bash
+psynet export heroku --app dlgr-sig-space --path ~/psynet-export
+```
+
+Then stop experiment to avoid Heroku charges
 
 
-For testing locally
+Changes for testing locally:
 config.txt: recruiter = prolific => recruiter = cli
 experiment.py: # asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
