@@ -17,7 +17,7 @@ num_dynos_worker = 0
 clock_on = true
 
 [Prolific]
-recruiter = cli
+recruiter = prolific
 # if running locally, change to cli
 currency = $
 wage_per_hour = 12.0

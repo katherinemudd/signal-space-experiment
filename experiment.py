@@ -762,7 +762,7 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
 class Exp(psynet.experiment.Experiment):
     # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
-    #asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+    asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
     def __init__(self, session):
         super().__init__(session)
