@@ -175,18 +175,21 @@ class SigSpaceTrial(StaticTrial):
                     GroupBarrier(
                         id_="wait_for_trial",
                         group_type="sigspace",
+                        max_wait_time=300,
                     ),
                     self.director_turn(participant=participant),
                     GroupBarrier(
                         id_="director_finished_trial",
                         group_type="sigspace",
                         on_release=self.save_director_answer,
+                        max_wait_time=300,
                     ),
                     self.matcher_turn(participant=participant),
                     GroupBarrier(
                         id_="matcher_finished_trial",
                         group_type="sigspace",
                         on_release=self.get_matcher_answer,
+                        max_wait_time=300,
                     ),
                     WaitPage(
                         1,
@@ -196,6 +199,7 @@ class SigSpaceTrial(StaticTrial):
                     GroupBarrier(
                         id_="trial_completed",
                         group_type="sigspace",
+                        max_wait_time=300,
                     ),
                 ),
                 expected_repetitions=9,  # Allow up to 9 attempts per node
