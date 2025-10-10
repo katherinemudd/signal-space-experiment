@@ -97,3 +97,8 @@ Changes for testing locally:
 config.txt: recruiter = prolific => recruiter = cli
 experiment.py: # asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
+exporting data locally:
+```bash
+cd /Users/katherinemudd/PsyNet/demos/experiments/sig_space_until_correct
+psynet export local --path ~/psynet-export --no-source
+```

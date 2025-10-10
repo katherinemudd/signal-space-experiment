@@ -33,13 +33,15 @@ def questionnaire():
                                     "name": "creativity",
                                     "title": "I consider myself to be creative",
                                     "rateValues": [
-                                        {"value": "1", "text": "1"},
-                                        {"value": "2", "text": "2"},
-                                        {"value": "3", "text": "3"},
-                                        {"value": "4", "text": "4"},
-                                        {"value": "5", "text": "5"},
-                                        {"value": "6", "text": "6"},
-                                        {"value": "7", "text": "7"}
+                                        {"value": "1", "text": "Strongly disagree"},
+                                        {"value": "2", "text": "Disagree"},
+                                        {"value": "3", "text": "Somewhat disagree"},
+                                        {"value": "4", "text": "Neither agree nor disagree"},
+                                        {"value": "5", "text": "Somewhat agree"},
+                                        {"value": "6", "text": "Agree"},
+                                        {"value": "7", "text": "Strongly agree"}
+
+
                                     ],
                                     "minRateDescription": "Disagree",
                                     "maxRateDescription": "Agree",
@@ -50,13 +52,13 @@ def questionnaire():
                                     "name": "musical_ability",
                                     "title": "I consider myself to have strong musical ability",
                                     "rateValues": [
-                                        {"value": "1", "text": "1"},
-                                        {"value": "2", "text": "2"},
-                                        {"value": "3", "text": "3"},
-                                        {"value": "4", "text": "4"},
-                                        {"value": "5", "text": "5"},
-                                        {"value": "6", "text": "6"},
-                                        {"value": "7", "text": "7"}
+                                        {"value": "1", "text": "Strongly disagree"},
+                                        {"value": "2", "text": "Disagree"},
+                                        {"value": "3", "text": "Somewhat disagree"},
+                                        {"value": "4", "text": "Neither agree nor disagree"},
+                                        {"value": "5", "text": "Somewhat agree"},
+                                        {"value": "6", "text": "Agree"},
+                                        {"value": "7", "text": "Strongly agree"}
                                     ],
                                     "minRateDescription": "Disagree",
                                     "maxRateDescription": "Agree",
