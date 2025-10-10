@@ -317,7 +317,7 @@ class SigSpaceTrial(StaticTrial):
                             p.vars["node_rhythms"] = {}
                         p.vars["node_rhythms"][node_content] = answer
 
-                        # Generate audio file for the rhythm
+                        # Generate audiofile for the rhythm
                         try:
                             print("DEBUG - try generate audio for rhythm")
                             audio_filename = parse_and_generate_audio(answer)
@@ -351,7 +351,7 @@ class SigSpaceTrial(StaticTrial):
                 audio_player_html = f"""
                 <div style='margin-bottom: 20px; text-align: center;'>
                     <audio id='rhythm-audio' autoplay loop style='display: none;'>
-                        <source src='/static/{audio_filename}' type='audio/wav'>
+                        <source src='/static/{audio_filename}' type='audio/mp3'>
                         Your browser does not support the audio element.
                     </audio>
                     <script>
@@ -766,7 +766,7 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
 class Exp(psynet.experiment.Experiment):
     # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
-    asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+    #asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
     def __init__(self, session):
         super().__init__(session)

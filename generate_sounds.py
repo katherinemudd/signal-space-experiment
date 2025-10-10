@@ -1,10 +1,13 @@
 import os
 import numpy as np
-from scipy.io import wavfile
+#from scipy.io import wavfile
+import audioread
 import re
+import librosa
+import soundfile as sf
 
 from psynet.asset import S3Storage
-asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
+#asset_storage = S3Storage("sigspace-bucket", "sigspace-experiment")  # Comment out S3 for local development
 
 # Constants
 SAMPLE_RATE = 44100
@@ -12,11 +15,8 @@ BASE_STEPS = 16  # matches drum_machine.html internal resolution
 STEP_TIME = 0.125  # 125ms per 16th note (120 BPM) - matches drum_machine.html STEP_TIME
 
 def load_sample(filename):
-    """Load a WAV file and return its data."""
-    sample_rate, data = wavfile.read(f'static/audio/{filename}.wav')
-    # Convert stereo to mono if necessary
-    if len(data.shape) > 1:
-        data = data.mean(axis=1)
+    data, sample_rate = librosa.load(f'static/audio/{filename}.mp3', sr=None)  # audioread.audio_open(f'static/audio/{filename}.mp3')
+    print(f"DEBUG: Loaded sample {filename} with sample rate {sample_rate}")
     return data
 
 def create_silence(duration):
@@ -115,21 +115,23 @@ def generate_audio_file(pattern, grid_size, kit_type, output_dir='static/generat
     # Create filename based on kit type
     if kit_type == 'snare+kick':
         snare_pattern, kick_pattern  = pattern.split('_')
-        filename = f"grid{grid_size}_snare{snare_pattern}_kick{kick_pattern}.wav"
+        filename = f"grid{grid_size}_snare{snare_pattern}_kick{kick_pattern}.mp3"
     elif kit_type == 'hihat+snare+kick':
         hihat_pattern, snare_pattern, kick_pattern = pattern.split('_')
-        filename = f"grid{grid_size}_hihat{hihat_pattern}_snare{snare_pattern}_kick{kick_pattern}.wav"
+        filename = f"grid{grid_size}_hihat{hihat_pattern}_snare{snare_pattern}_kick{kick_pattern}.mp3"
     
     # Full path for the file
     full_path = os.path.join(output_dir, filename)
     print(f'Full path for audio file: {full_path}')
     
     # Save the audio file
-    wavfile.write(full_path, SAMPLE_RATE, (audio * 32767).astype(np.int16))
-    print(f'Saved audio file to: {full_path}')
+    #wavfile.write(full_path, SAMPLE_RATE, (audio * 32767).astype(np.int16))
+    #print(f'Saved audio file to: {full_path}')
+    sf.write(full_path, audio, SAMPLE_RATE, format='MP3')
     
     # Return the path relative to the static directory for web access
     return os.path.join('generated_sounds', filename)
+
 
 def parse_and_generate_audio(director_sound_str):
     """
@@ -182,4 +184,3 @@ def parse_and_generate_audio(director_sound_str):
     
     # Generate the audio file
     return generate_audio_file(pattern, grid_size, kit_type)
-

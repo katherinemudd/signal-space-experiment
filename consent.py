@@ -10,7 +10,7 @@ information_and_consent = div()
 with information_and_consent:
     div(
         h1("Information sheet", style="display: inline-block; margin: 0;"),
-        img(src="static/figs/sbu_logo.png", alt="Stony Brook University Logo", style="max-width: 200px; margin: 10px 0; float: right;"),
+        img(src="static/figs/sbu_logo.jpeg", alt="Stony Brook University Logo", style="max-width: 200px; margin: 10px 0; float: right;"),
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"
     )
     p(strong("Project title:  Dynamics of creative exploration", style="text-decoration: underline;"))

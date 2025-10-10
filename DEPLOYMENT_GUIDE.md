@@ -84,7 +84,10 @@ for testing in a dyad: only match in study ID
 When experiment is done, collect data
 try:
 ```bash
-psynet export heroku --app dlgr-sig-space --path ~/psynet-export
+psynet export heroku --app my-app-name
+psynet export local
+psynet export ssh --app my-app-name    
+#psynet export heroku --app dlgr-sig-space --path ~/psynet-export
 ```
 
 Then stop experiment to avoid Heroku charges

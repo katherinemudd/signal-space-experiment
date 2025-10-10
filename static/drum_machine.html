@@ -81,9 +81,9 @@
         </script></head>
 <body>
     <!-- Audio samples -->
-    <audio id="kick-sample" preload="auto" src="/static/audio/kick.wav"></audio>
-    <audio id="snare-sample" preload="auto" src="/static/audio/snare.wav"></audio>
-    <audio id="hihat-sample" preload="auto" src="/static/audio/hihat.wav"></audio>
+    <audio id="kick-sample" preload="auto" src="/static/audio/kick.mp3"></audio>
+    <audio id="snare-sample" preload="auto" src="/static/audio/snare.mp3"></audio>
+    <audio id="hihat-sample" preload="auto" src="/static/audio/hihat.mp3"></audio>
 
     <div class="drum-machine">
         <div id="grid" class="grid"></div>
@@ -212,7 +212,7 @@
                 const label = document.createElement('div');
                 label.className = 'row-label';
                 const img = document.createElement('img');
-                img.src = `/static/figs/${row}.png`;
+                img.src = `/static/figs/${row}.jpg`;
                 img.alt = row;
                 label.appendChild(img);
                 rowDiv.appendChild(label);

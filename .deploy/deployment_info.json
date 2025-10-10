@@ -1,0 +1,13 @@
+{
+    "redeploying_from_archive": false,
+    "mode": "debug",
+    "is_local_deployment": true,
+    "is_ssh_deployment": false,
+    "folder_name": "sig_space_until_correct",
+    "secret": {
+        "py/object": "uuid.UUID",
+        "hex": "caaf94b316854e3c8b210e99e113c431"
+    },
+    "deployment_id": "sig_space_until_correct__mode=debug__launch=2025-10-09--19-07-19",
+    "locale": "en"
+}
