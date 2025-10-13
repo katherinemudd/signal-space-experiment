@@ -26,10 +26,6 @@ from .wait_video_old import video_wait_page
 
 logger = get_logger()
 
-DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
-GRID_SIZE = 8            # options: 4, 8
-DOMAIN = "communication"         # options: "communication", "music"
-
 color_dict = {'yellow': [60, 100, 50],
               'orange': [38.8, 100, 50],
               'green': [120, 100, 50],
@@ -40,32 +36,45 @@ color_dict = {'yellow': [60, 100, 50],
               'brown': [30, 100, 29],
               'grey': [0, 0, 50]}
 
-# before experiment starts, generate color lists for both participants
-if DOMAIN == "communication":
-    nodes = []  # Create one node for each color, where director_index 0 will always be director
-    colors = list(color_dict.keys())
-    for color in colors:
-        nodes.append(
-            StaticNode(definition={
-                "director_index": 0,  # First participant will always be director
-                "color": color,
-                "matcher_choice":  'add color',
-                "attempts": 0,  # Track number of attempts for this color
-                "completed": False  # Track if this color has been completed
-            })
-        )
-elif DOMAIN == "music":
-    nodes = []
-    melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
-    for melody in melodies:
-        nodes.append(
-            StaticNode(definition={
-                "director_index": 0,  # First participant will always be director
-                "melody": melody,
-                "attempts": 0,  # Track number of attempts for this node
-                "completed": False  # Track if node has been completed
-            })
-        )
+set_condition_on = False
+
+if set_condition_on:
+    DOMAIN = "communication"         # options: "communication", "music"
+    DRUM_KIT = "snare+kick"  # options: "snare+kick", "hihat+snare+kick"
+    GRID_SIZE = 8            # options: 4, 8
+
+else:
+    DOMAIN = random.choice(["communication", "music"])
+    GRID_SIZE = random.choice([4, 8])
+    DRUM_KIT = random.choice(["snare+kick", "hihat+snare+kick"])
+
+    # before experiment starts, generate color lists for both participants
+    if DOMAIN == "communication":
+        nodes = []  # Create one node for each color, where director_index 0 will always be director
+        colors = list(color_dict.keys())
+        for color in colors:
+            nodes.append(
+                StaticNode(definition={
+                    "director_index": 0,  # First participant will always be director
+                    "color": color,
+                    "matcher_choice":  'add color',
+                    "attempts": 0,  # Track number of attempts for this color
+                    "completed": False  # Track if this color has been completed
+                })
+            )
+
+    else:  # DOMAIN == "music":
+        nodes = []
+        melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
+        for melody in melodies:
+            nodes.append(
+                StaticNode(definition={
+                    "director_index": 0,  # First participant will always be director
+                    "melody": melody,
+                    "attempts": 0,  # Track number of attempts for this node
+                    "completed": False  # Track if node has been completed
+                })
+            )
 
 class ColorCubeControl(Control):
     macro = "color_cube"
