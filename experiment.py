@@ -1,4 +1,5 @@
 import random
+from itertools import accumulate
 from typing import List
 
 from dominate import tags
@@ -28,16 +29,6 @@ logger = get_logger()
 
 set_condition_on = True
 
-if set_condition_on:
-    DOMAIN = "communication"         # options: "communication", "music"
-    DRUM_KIT = "hihat+snare+kick"  # options: "snare+kick", "hihat+snare+kick"
-    GRID_SIZE = 8            # options: 4, 8
-
-else:
-    DOMAIN = random.choice(["communication", "music"])
-    GRID_SIZE = random.choice([4, 8])
-    DRUM_KIT = random.choice(["snare+kick", "hihat+snare+kick"])
-
 color_dict = {'yellow': [60, 100, 50],
               'orange': [38.8, 100, 50],
               'green': [120, 100, 50],
@@ -48,32 +39,52 @@ color_dict = {'yellow': [60, 100, 50],
               'brown': [30, 100, 29],
               'grey': [0, 0, 50]}
 
-# before experiment starts, generate color lists for both participants
-if DOMAIN == "communication":
-    nodes = []  # Create one node for each color, where director_index 0 will always be director
-    colors = list(color_dict.keys())
-    for color in colors:
-        nodes.append(
-            StaticNode(definition={
-                "director_index": 0,  # First participant will always be director
-                "color": color,
-                "matcher_choice":  'add color',
-                "attempts": 0,  # Track number of attempts for this color
-                "completed": False  # Track if this color has been completed
-            })
-        )
-elif DOMAIN == "music":
-    nodes = []
-    melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
-    for melody in melodies:
-        nodes.append(
-            StaticNode(definition={
-                "director_index": 0,  # First participant will always be director
-                "melody": melody,
-                "attempts": 0,  # Track number of attempts for this node
-                "completed": False  # Track if node has been completed
-            })
-        )
+def generate_nodes(DOMAIN, GRID_SIZE, DRUM_KIT):
+    # before experiment starts, generate color lists for both participants
+    if DOMAIN == "communication":
+        nodes = []  # Create one node for each color, where director_index 0 will always be director
+        colors = list(color_dict.keys())
+        for color in colors:
+            nodes.append(
+                StaticNode(definition={
+                    "director_index": 0,  # First participant will always be director
+                    "color": color,
+                    "matcher_choice":  'add color',
+                    "attempts": 0,  # Track number of attempts for this color
+                    "completed": False  # Track if this color has been completed
+                    # todo: add block = domain, grid_size, drum_kit (nori)
+                    # todo: DOMAIN=self.definition[“domain”]
+                })
+            )
+    elif DOMAIN == "music":
+        nodes = []
+        melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
+        for melody in melodies:
+            nodes.append(
+                StaticNode(definition={
+                    "director_index": 0,  # First participant will always be director
+                    "melody": melody,
+                    "attempts": 0,  # Track number of attempts for this node
+                    "completed": False  # Track if node has been completed
+                })
+            )
+    return nodes
+
+
+
+if set_condition_on:
+    DOMAIN = "communication"  # options: "communication", "music"
+    DRUM_KIT = "hihat+snare+kick"  # options: "snare+kick", "hihat+snare+kick"
+    GRID_SIZE = 8  # options: 4, 8
+
+
+else:
+    DOMAIN = random.choice(["communication", "music"])
+    GRID_SIZE = random.choice([4, 8])
+    DRUM_KIT = random.choice(["snare+kick", "hihat+snare+kick"])
+
+nodes = generate_nodes(DOMAIN, GRID_SIZE, DRUM_KIT)
+
 
 class ColorCubeControl(Control):
     macro = "color_cube"
@@ -126,6 +137,7 @@ class SigSpaceTrialMaker(StaticTrialMaker):
             max_trials_per_participant=max_trials_per_participant,
             allow_repeated_nodes=allow_repeated_nodes,
             sync_group_type=sync_group_type,
+            # todo: trial_within_block = 0 (nori)
         )
     
     def get_next_trial(self, participant):
@@ -161,9 +173,12 @@ class SigSpaceTrial(StaticTrial):
 
     def show_trial(self, experiment, participant):
         # Role assignment is now done in director_message function
-        if DOMAIN == 'communication':
+        if DOMAIN == 'communication':  # todo: self.definition["domain"]
             participant.vars["current_color"] = self.definition["color"]
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
+
+        # Clear the previous trial's data
+        #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
 
         # Add debugging for node progression
         node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
@@ -210,7 +225,7 @@ class SigSpaceTrial(StaticTrial):
                         max_wait_time=300,
                     ),
                 ),
-                expected_repetitions=9,  # Allow up to 9 attempts per node
+                expected_repetitions=9,  # Allow up to 9 attempts per node  # todo: try with 1 (nori), check len(self.answer) if over 9 then end
             )
 
     def director_turn(self, participant):
@@ -308,9 +323,13 @@ class SigSpaceTrial(StaticTrial):
                     current_trial = p.current_trial
                     if current_trial:
                         node_content = current_trial.definition.get("color") if DOMAIN == "communication" else current_trial.definition.get("melody")
-                    
+                    else:  # todo
+                        print("ERROR - No current trial found")
+                        continue
+
                     # Always get the current rhythm from last_action
                     answer = p.vars.get("last_action")
+                    #self.node.definition["director_rhythm"] = answer  # todo
                     self.node.var.director_rhythm = answer
 
                     # Check if we already have a rhythm for this node
@@ -794,7 +813,7 @@ class Exp(psynet.experiment.Experiment):
         return jsonify(len(participant.active_barriers) > 0)
 
     timeline = Timeline(
-        consent(),
+        consent(),  # todo: (nori)
         # PageMaker(requirements, time_estimate=60),
         # CustomColorBlindnessTest(
         #      label="color_blindness_test",
@@ -826,7 +845,8 @@ class Exp(psynet.experiment.Experiment):
 
         PageMaker(experiment_start, time_estimate=10),
 
-        CodeBlock(lambda participant: participant.set_answer("continue")),
+        CodeBlock(lambda participant: participant.set_answer("continue")),  # todo: see what happens if remove
+        # todo: add group barrier (nori)
 
         PageMaker(director_message, time_estimate=10),
         Module(
@@ -834,9 +854,10 @@ class Exp(psynet.experiment.Experiment):
             SigSpaceTrialMaker(
                 id_="sigspace_trial",
                 trial_class=SigSpaceTrial,
-                nodes=nodes,  # Pass all nodes
+                nodes=nodes,  # todo: pass node function (nori)
                 expected_trials_per_participant=len(nodes),
                 max_trials_per_participant=len(nodes),
+                # todo: max_trials_per_block=len(nodes)  (nori)
                 allow_repeated_nodes=False,
                 sync_group_type="sigspace",
             ),
