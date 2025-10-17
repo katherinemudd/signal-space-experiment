@@ -6,7 +6,8 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-from .consent import consent
+#from .consent import consent
+from .consent import CustomConsent
 from .dat import dat
 from .questionnaire import questionnaire
 from .generate_sounds import parse_and_generate_audio
@@ -813,7 +814,8 @@ class Exp(psynet.experiment.Experiment):
         return jsonify(len(participant.active_barriers) > 0)
 
     timeline = Timeline(
-        consent(),  # todo: (nori)
+        CustomConsent(),
+        #consent(),  # todo: (nori)
         # PageMaker(requirements, time_estimate=60),
         # CustomColorBlindnessTest(
         #      label="color_blindness_test",
