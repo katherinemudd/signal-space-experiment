@@ -26,7 +26,8 @@ def get_nodes():
             },
             #block=f'{domain}_{grid_size}_{drum_kit}',  # todo: not sure, maybe block instead otherwise?
         )
-        for domain in ["communication", "music"]
+        #for domain in ["communication", "music"]
+        for domain in ["communication"]
         for grid_size in [4, 8]
         for drum_kit in ["snare+kick", "hihat+snare+kick"]
         for item in (list(get_color_dict().keys()))

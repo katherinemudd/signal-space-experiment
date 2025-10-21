@@ -136,24 +136,6 @@ class SigSpaceTrial(StaticTrial):
         #
         #     # Show role-specific instructions
 
-        # todo: show director message
-        if participant.sync_group.leader == participant:
-            print('DEBUG - made it here')
-            print(f'{self.definition["domain"]}')
-            html = tags.div()
-            with html:
-                if self.definition["domain"] == "communication":
-                    print('DEBUG - made it here 2')  # doesn't work
-                    tags.h1("Director Instructions")
-                    tags.p("You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
-                    tags.p("You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
-                elif self.definition["domain"] == "music":
-                    tags.h1("Producer Instructions")
-                    tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
-                    tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
-                    tags.p("Press 'Next' when you are ready to begin.")
-                return InfoPage(html, time_estimate=60)
-
         # Create a while loop that continues until this specific node is completed
         return while_loop(
                 "node_attempt_loop",
@@ -168,6 +150,7 @@ class SigSpaceTrial(StaticTrial):
                         group_type="sig_space_groups",
                         max_wait_time=300,
                     ),
+                    #self.show_director_message(participant=participant),  # todo
                     self.director_turn(participant=participant),
                     GroupBarrier(
                         id_="director_finished_trial",
@@ -196,12 +179,33 @@ class SigSpaceTrial(StaticTrial):
                 expected_repetitions=9,  # Allow up to 9 attempts per node  # todo: try with 1 (nori), check len(self.answer) if over 9 then end
             )
 
+    def show_director_message(self, participant):
+        # todo: how to track which node / trial # ?
+        if participant.sync_group.leader == participant:  # = director
+            print('DEBUG - made it here')
+            print(f'{self.definition["domain"]}')
+            html = tags.div()
+            with html:
+                if self.definition["domain"] == "communication":
+                    print('DEBUG - made it here 2')  # doesn't work
+                    tags.h1("Director Instructions")
+                    tags.p(
+                        "You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
+                    tags.p(
+                        "You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
+                elif self.definition["domain"] == "music":
+                    tags.h1("Producer Instructions")
+                    tags.p(
+                        "As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
+                    tags.p(
+                        "You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
+                    tags.p("Press 'Next' when you are ready to begin.")
+                return InfoPage(html, time_estimate=60)
+
     def director_turn(self, participant):
-        print("DEBUG director turn")
         if participant.sync_group.leader == participant:  # = is participant the leader
             print(f"DEBUG director turn - I am your leader {participant.id}")
             node_content = self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody")
-            print(f'DEBUG director turn - node content')
             # Check if we already have a rhythm for this node (use node content as key)
             existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
 
@@ -287,60 +291,61 @@ class SigSpaceTrial(StaticTrial):
             )
 
     def save_director_answer(self, participants: List[Participant]):
-        for p in participants:
-                if p.vars.get("role") == "director":
-                    # Get the current node content from the trial definition
-                    # We need to access the trial definition through the experiment
-                    experiment = get_experiment()
-                    current_trial = p.current_trial
-                    if current_trial:
-                        node_content = current_trial.definition.get("color") if self.definition["domain"] == "communication" else current_trial.definition.get("melody")
-                    else:  # todo
-                        print("ERROR - No current trial found")
-                        continue
+        for participant in participants:
+            if participant.sync_group.leader == participant:  # = director
+                # Get the current node content from the trial definition
+                # We need to access the trial definition through the experiment
+                experiment = get_experiment()
+                current_trial = participant.current_trial
+                if current_trial:
+                    node_content = current_trial.definition.get("color") if self.definition["domain"] == "communication" else current_trial.definition.get("melody")
+                else:  # todo
+                    print("ERROR - No current trial found")
+                    continue
 
-                    # Always get the current rhythm from last_action
-                    answer = p.vars.get("last_action")
-                    #self.node.definition["director_rhythm"] = answer  # todo
-                    self.node.var.director_rhythm = answer
+                # Always get the current rhythm from last_action
+                answer = participant.vars.get("last_action")
+                #self.node.definition["director_rhythm"] = answer  # todo
+                self.node.var.director_rhythm = answer
 
-                    # Check if we already have a rhythm for this node
-                    existing_rhythm = p.vars.get("node_rhythms", {}).get(node_content)
+                # Check if we already have a rhythm for this node
+                existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
 
-                    if existing_rhythm and existing_rhythm is not None and answer == existing_rhythm:
+                if existing_rhythm and existing_rhythm is not None and answer == existing_rhythm:
                         # Rhythm hasn't changed - reuse existing audio
-                        audio_filename = p.vars.get("node_audio_filenames", {}).get(node_content)
-                    else:
-                        # New or modified rhythm - store it and generate new audio
-                        if "node_rhythms" not in p.vars:
-                            p.vars["node_rhythms"] = {}
-                        p.vars["node_rhythms"][node_content] = answer
+                    audio_filename = participant.vars.get("node_audio_filenames", {}).get(node_content)
+                else:
+                    # New or modified rhythm - store it and generate new audio
+                    if "node_rhythms" not in participant.vars:
+                        participant.vars["node_rhythms"] = {}
+                    participant.vars["node_rhythms"][node_content] = answer
 
                         # Generate audiofile for the rhythm
-                        try:
-                            print("DEBUG - try generate audio for rhythm")
-                            audio_filename = parse_and_generate_audio(answer)
+                    try:
+                        print("DEBUG - try generate audio for rhythm")
+                        audio_filename = parse_and_generate_audio(answer)
                             
                             # Store the audio filename for this node
-                            if "node_audio_filenames" not in p.vars:
-                                p.vars["node_audio_filenames"] = {}
-                            p.vars["node_audio_filenames"][node_content] = audio_filename
+                        if "node_audio_filenames" not in participant.vars:
+                            participant.vars["node_audio_filenames"] = {}
+                        participant.vars["node_audio_filenames"][node_content] = audio_filename
 
-                            if "node_rhythms" not in p.vars:
-                                p.vars["node_rhythms"] = {}
-                            p.vars["node_rhythms"][node_content] = answer
-                        except Exception as e:
-                            raise Exception(f"Audio generation failed for rhythm '{answer}': {str(e)}")
+                        if "node_rhythms" not in participant.vars:
+                            participant.vars["node_rhythms"] = {}
+                        participant.vars["node_rhythms"][node_content] = answer
+                    except Exception as e:
+                        raise Exception(f"Audio generation failed for rhythm '{answer}': {str(e)}")
 
-                    # save to participant vars so matcher can access
-                    for pp in participants:
-                        if pp.vars.get("role") == "matcher":
-                            pp.vars["director_answer"] = answer
-                            if audio_filename:
-                                pp.vars["audio_filename"] = audio_filename
+                # save to participant vars so matcher can access
+                for participant in participants:
+                    if participant.sync_group.leader != participant:  # = matcher
+                        participant.vars["director_answer"] = answer
+                        if audio_filename:
+                            participant.vars["audio_filename"] = audio_filename
 
     def matcher_turn(self, participant):
-        if participant.vars.get("role") == "matcher":
+
+        if participant.sync_group.leader != participant:  # = matcher
             try:
                 # Retrieve the director's answer from participant vars
                 director_answer = participant.vars.get("director_answer")
@@ -500,7 +505,7 @@ class SigSpaceTrial(StaticTrial):
     def feedback_page(self, experiment, participant):
         #print(f'feedback_page self node definition {self.node.definition}')  # todo: doesn't have matcher_choice, but it does have it on line 504
         if self.definition["domain"] == "communication":
-            if participant.vars.get("role") == "matcher":
+            if participant.sync_group.leader != participant:  # = is participant the matcher
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
                 matcher_choice_hsl = get_color_dict().get(matcher_choice, [0, 0, 0])
 
