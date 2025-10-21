@@ -6,11 +6,11 @@ from dominate import tags
 from markupsafe import Markup
 
 import psynet.experiment
-#from .consent import consent
 from .consent import CustomConsent
 from .dat import dat
-from .questionnaire import questionnaire
 from .generate_sounds import parse_and_generate_audio
+from .node_creation import get_nodes, get_testing_nodes, get_color_dict
+from .questionnaire import questionnaire
 from psynet.consent import NoConsent
 from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButtonControl, Prompt, Control, TextControl
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
@@ -27,64 +27,6 @@ from psynet.asset import S3Storage
 from .wait_video_old import video_wait_page
 
 logger = get_logger()
-
-set_condition_on = True
-
-color_dict = {'yellow': [60, 100, 50],
-              'orange': [38.8, 100, 50],
-              'green': [120, 100, 50],
-              'blue': [240, 100, 50],
-              'purple': [277, 87, 53],
-              'pink': [349.5, 100, 87.6],
-              'red': [0, 100, 50],
-              'brown': [30, 100, 29],
-              'grey': [0, 0, 50]}
-
-def generate_nodes(DOMAIN, GRID_SIZE, DRUM_KIT):
-    # before experiment starts, generate color lists for both participants
-    if DOMAIN == "communication":
-        nodes = []  # Create one node for each color, where director_index 0 will always be director
-        colors = list(color_dict.keys())
-        for color in colors:
-            nodes.append(
-                StaticNode(definition={
-                    "director_index": 0,  # First participant will always be director
-                    "color": color,
-                    "matcher_choice":  'add color',
-                    "attempts": 0,  # Track number of attempts for this color
-                    "completed": False  # Track if this color has been completed
-                    # todo: add block = domain, grid_size, drum_kit (nori)
-                    # todo: DOMAIN=self.definition[“domain”]
-                })
-            )
-    elif DOMAIN == "music":
-        nodes = []
-        melodies = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
-        for melody in melodies:
-            nodes.append(
-                StaticNode(definition={
-                    "director_index": 0,  # First participant will always be director
-                    "melody": melody,
-                    "attempts": 0,  # Track number of attempts for this node
-                    "completed": False  # Track if node has been completed
-                })
-            )
-    return nodes
-
-
-
-if set_condition_on:
-    DOMAIN = "communication"  # options: "communication", "music"
-    DRUM_KIT = "hihat+snare+kick"  # options: "snare+kick", "hihat+snare+kick"
-    GRID_SIZE = 8  # options: 4, 8
-
-
-else:
-    DOMAIN = random.choice(["communication", "music"])
-    GRID_SIZE = random.choice([4, 8])
-    DRUM_KIT = random.choice(["snare+kick", "hihat+snare+kick"])
-
-nodes = generate_nodes(DOMAIN, GRID_SIZE, DRUM_KIT)
 
 
 class ColorCubeControl(Control):
@@ -128,7 +70,7 @@ class DrumMachineControl(Control):
         }
 
 class SigSpaceTrialMaker(StaticTrialMaker):
-    def __init__(self, id_, trial_class, nodes, expected_trials_per_participant, max_trials_per_participant, allow_repeated_nodes, sync_group_type):
+    def __init__(self, id_, trial_class, nodes, expected_trials_per_participant, max_trials_per_participant, max_trials_per_block, allow_repeated_nodes, sync_group_type):
         # Create a single block with all nodes
         super().__init__(
             id_=id_,
@@ -136,19 +78,20 @@ class SigSpaceTrialMaker(StaticTrialMaker):
             nodes=nodes,
             expected_trials_per_participant=expected_trials_per_participant,
             max_trials_per_participant=max_trials_per_participant,
+            max_trials_per_block=max_trials_per_block,
             allow_repeated_nodes=allow_repeated_nodes,
             sync_group_type=sync_group_type,
-            # todo: trial_within_block = 0 (nori)
+            #block = 0  # (nori)
         )
     
-    def get_next_trial(self, participant):
+    def get_next_trial(self, experiment, participant):  # todo: I don't think this is necessary
         """Override to only select uncompleted nodes"""
         # Get all uncompleted nodes
         completed_nodes = participant.vars.get("node_completion", {})
         uncompleted_nodes = []
         
         for node in self.nodes:
-            if DOMAIN == "music":
+            if node.definition["domain"] == "music":
                 node_content = node.definition["melody"]
             else:  # communication
                 node_content = node.definition["color"]
@@ -174,44 +117,68 @@ class SigSpaceTrial(StaticTrial):
 
     def show_trial(self, experiment, participant):
         # Role assignment is now done in director_message function
-        if DOMAIN == 'communication':  # todo: self.definition["domain"]
+        if self.definition["domain"] == 'communication':
             participant.vars["current_color"] = self.definition["color"]
             participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
         # Clear the previous trial's data
         #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
 
-        # Add debugging for node progression
-        node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
-        print(f"DEBUG - Starting trial for participant {participant.id}, role={participant.vars.get('role')}, node_content={node_content}, domain={DOMAIN}")
-        print(f"DEBUG - Node definition: {self.definition}")
-        print(f"DEBUG - Participant's node completion: {participant.vars.get('node_completion', {})}")
+        # todo: idk about this ??
+        # if "role_index" not in participant.vars:
+        #     participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
+        #     participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
+        #     # Initialize participant's own completion tracking with all nodes as False  # todo: all should be taken care of by psynet
+        #     if self.definition["domain"] == "music":
+        #         participant.vars["node_completion"] = {melody: False for melody in get_color_dict().keys()}
+        #     elif self.definition["domain"] == "communication":
+        #         participant.vars["node_completion"] = {color: False for color in get_color_dict().keys()}
+        #
+        #     # Show role-specific instructions
+
+        # todo: show director message
+        if participant.sync_group.leader == participant:
+            print('DEBUG - made it here')
+            print(f'{self.definition["domain"]}')
+            html = tags.div()
+            with html:
+                if self.definition["domain"] == "communication":
+                    print('DEBUG - made it here 2')  # doesn't work
+                    tags.h1("Director Instructions")
+                    tags.p("You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
+                    tags.p("You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
+                elif self.definition["domain"] == "music":
+                    tags.h1("Producer Instructions")
+                    tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
+                    tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
+                    tags.p("Press 'Next' when you are ready to begin.")
+                return InfoPage(html, time_estimate=60)
 
         # Create a while loop that continues until this specific node is completed
         return while_loop(
                 "node_attempt_loop",
                 lambda participant: not participant.vars.get("node_completion", {}).get(
-                    self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody"),
+                    self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody"),
                     False
                 ),  # Use participant's own completion state
                 # Continue looping as long as the current node is NOT completed for this participant
                 join(
                     GroupBarrier(
                         id_="wait_for_trial",
-                        group_type="sigspace",
+                        group_type="sig_space_groups",
                         max_wait_time=300,
                     ),
                     self.director_turn(participant=participant),
                     GroupBarrier(
                         id_="director_finished_trial",
-                        group_type="sigspace",
+                        group_type="sig_space_groups",
                         on_release=self.save_director_answer,
                         max_wait_time=300,
                     ),
                     self.matcher_turn(participant=participant),
                     GroupBarrier(
                         id_="matcher_finished_trial",
-                        group_type="sigspace",
+                        group_type="sig_space_groups",
                         on_release=self.get_matcher_answer,
                         max_wait_time=300,
                     ),
@@ -219,10 +186,10 @@ class SigSpaceTrial(StaticTrial):
                         1,
                         content="Waiting for your partner...",
                     ),
-                    self.feedback_page(experiment=experiment, participant=participant),
+                    #self.feedback_page(experiment=experiment, participant=participant),
                     GroupBarrier(
                         id_="trial_completed",
-                        group_type="sigspace",
+                        group_type="sig_space_groups",
                         max_wait_time=300,
                     ),
                 ),
@@ -230,18 +197,22 @@ class SigSpaceTrial(StaticTrial):
             )
 
     def director_turn(self, participant):
-        if participant.vars.get("role") == "director":
-            node_content = self.definition.get("color") if DOMAIN == "communication" else self.definition.get("melody")
-            
+        print("DEBUG director turn")
+        if participant.sync_group.leader == participant:  # = is participant the leader
+            print(f"DEBUG director turn - I am your leader {participant.id}")
+            node_content = self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody")
+            print(f'DEBUG director turn - node content')
             # Check if we already have a rhythm for this node (use node content as key)
             existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
-            
+
             if existing_rhythm and existing_rhythm is not None:
                 # Show the existing rhythm with the drum machine pre-filled
-                if DOMAIN == "communication":
+                if self.definition["domain"] == "communication":
+                    print(f'DEBUG director turn - if statement communication')
                     director_color = participant.vars["current_color"]
-                    director_color_hsl = color_dict.get(director_color)
-                    
+                    director_color_hsl = get_color_dict().get(director_color)
+                    print(f'DEBUG director turn: {director_color_hsl}')
+
                     return join(
                         ModularPage(
                             "director-task",
@@ -251,7 +222,7 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            ColorCubeControl(director_color_hsl, DRUM_KIT, GRID_SIZE, initial_pattern=existing_rhythm),
+                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=existing_rhythm),
                             time_estimate=60,
                             save_answer="last_action"
                         )
@@ -266,16 +237,16 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            DrumMachineControl(DRUM_KIT, GRID_SIZE, initial_pattern=existing_rhythm),
+                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=existing_rhythm),
                             time_estimate=60,
                             save_answer="last_action"
                         )
                     )
             else:
                 # First time for this node - allow them to create a rhythm
-                if DOMAIN == "communication":
+                if self.definition["domain"] == "communication":
                     director_color = participant.vars["current_color"]
-                    director_color_hsl = color_dict.get(director_color)
+                    director_color_hsl = get_color_dict().get(director_color)
                     #print(f'DEBUG - Director turn: node content is {node_content}, node is {self.definition}')
 
                     return join(
@@ -287,7 +258,7 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            ColorCubeControl(director_color_hsl, DRUM_KIT, GRID_SIZE),
+                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"], self.definition["grid_size"]),
                             time_estimate=60,
                             save_answer="last_action"
                         )
@@ -302,7 +273,7 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            DrumMachineControl(DRUM_KIT, GRID_SIZE),
+                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"]),
                             time_estimate=60,
                             save_answer="last_action"
                         )
@@ -323,7 +294,7 @@ class SigSpaceTrial(StaticTrial):
                     experiment = get_experiment()
                     current_trial = p.current_trial
                     if current_trial:
-                        node_content = current_trial.definition.get("color") if DOMAIN == "communication" else current_trial.definition.get("melody")
+                        node_content = current_trial.definition.get("color") if self.definition["domain"] == "communication" else current_trial.definition.get("melody")
                     else:  # todo
                         print("ERROR - No current trial found")
                         continue
@@ -407,9 +378,9 @@ class SigSpaceTrial(StaticTrial):
                 </div>
                 """
 
-                if DOMAIN == "communication":
+                if self.definition["domain"] == "communication":
                     # Communication domain: Show color grid
-                    choices = list(color_dict.keys())
+                    choices = list(get_color_dict().keys())
                     # Shuffle the color choices for each trial
                     shuffled_choices = choices.copy()
                     random.shuffle(shuffled_choices)
@@ -420,7 +391,7 @@ class SigSpaceTrial(StaticTrial):
                         "<div id='color-grid' style='display: grid; grid-template-columns: repeat(3, 70px); gap: 5px; justify-content: center;'>"
                     )
                     for i, color in enumerate(shuffled_choices):
-                        hsl = color_dict[color]
+                        hsl = get_color_dict()[color]
                         grid_html += (
                             f"<div class='color-cube' "
                             f"data-color='{color}' "
@@ -528,13 +499,13 @@ class SigSpaceTrial(StaticTrial):
 
     def feedback_page(self, experiment, participant):
         #print(f'feedback_page self node definition {self.node.definition}')  # todo: doesn't have matcher_choice, but it does have it on line 504
-        if DOMAIN == "communication":
+        if self.definition["domain"] == "communication":
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
-                matcher_choice_hsl = color_dict.get(matcher_choice, [0, 0, 0])
+                matcher_choice_hsl = get_color_dict().get(matcher_choice, [0, 0, 0])
 
                 director_color = participant.vars["director_color"]  # Use the stored director color
-                director_color_hsl = color_dict.get(director_color, [0, 0, 0])
+                director_color_hsl = get_color_dict().get(director_color, [0, 0, 0])
 
                 if matcher_choice != director_color:
                     result = "Unsuccessful!"
@@ -563,10 +534,10 @@ class SigSpaceTrial(StaticTrial):
             else:  # "director"
                 matcher_choice_alt = participant.vars.get("last_trial")
                 matcher_choice = participant.vars.get("last_trial", {}).get("action_other")  # Get the matcher's choice from last_trial
-                matcher_choice_hsl = color_dict.get(matcher_choice, [0, 0, 0])
+                matcher_choice_hsl = get_color_dict().get(matcher_choice, [0, 0, 0])
 
                 director_color = participant.vars["director_color"]  # Use the stored director color
-                director_color_hsl = color_dict.get(director_color, [0, 0, 0])
+                director_color_hsl = get_color_dict().get(director_color, [0, 0, 0])
 
                 if matcher_choice == director_color:
                     result = "Successful!"
@@ -596,7 +567,7 @@ class SigSpaceTrial(StaticTrial):
                     prompt = Markup(f"<strong>{result}</strong><br><br>"
                                     f"Your partner guessed the wrong color. Try again!<br>")
 
-        elif DOMAIN == "music":
+        elif self.definition["domain"] == "music":
             if participant.vars.get("role") == "matcher":
                 matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
 
@@ -654,12 +625,6 @@ class SigSpaceTrial(StaticTrial):
             show_next_button=True
         )
 
-def save_conditions(participant, experiment):
-    """Store experiment conditions in participant vars"""
-    participant.vars["domain"] = DOMAIN
-    participant.vars["grid_size"] = GRID_SIZE
-    participant.vars["drum_kit"] = DRUM_KIT
-
 def requirements():
     html = tags.div()
     with html:
@@ -696,15 +661,9 @@ def experiment_start():
         tags.p(
             "You will soon begin an experiment with another participant."
         )
-        if DOMAIN == "communication":
-            tags.p(
-                "You will either have the role of creating sounds on a drum machine to describe colors or guessing which color your partner was referring to with a rhythm created on a drum machine."
-               )
-        if DOMAIN == "music":
-            tags.p(
+        tags.p(
                 "You will either have the role of creating sounds on a drum machine or giving feedback on the sounds created by your partner."
                )
-
         tags.p(
             "There are time limits for each experiment phase, so it is important that you keep progressing through the experiment to avoid timing out and ending the experiment early for you and your partner."
         )
@@ -712,33 +671,6 @@ def experiment_start():
             "Please press 'Next' when you are ready to be paired with a participant."
         )
     return InfoPage(html, time_estimate=60)
-
-def director_message(participant):
-    """Show role-specific instructions before the experiment starts"""
-    # Set role based on participant ID (even/odd) if not already set
-    if "role_index" not in participant.vars:
-        participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
-        participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
-        # Initialize participant's own completion tracking with all nodes as False
-        if DOMAIN == "music":
-            participant.vars["node_completion"] = {melody: False for melody in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]}
-        elif DOMAIN == "communication":
-            participant.vars["node_completion"] = {color: False for color in color_dict.keys()}
-    
-    # Show role-specific instructions
-    if participant.vars.get("role") == "director" or participant.vars.get("role") == "producer":
-        html = tags.div()
-        with html:
-            if DOMAIN == "communication":
-                tags.h1("Director Instructions")
-                tags.p("You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
-                tags.p("You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
-            if DOMAIN == "music":
-                tags.h1("Producer Instructions")
-                tags.p("As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
-                tags.p("You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
-            tags.p("Press 'Next' when you are ready to begin.")
-        return InfoPage(html, time_estimate=60)
 
 def debrief_and_feedback():
     return ModularPage(
@@ -795,6 +727,16 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
             time_estimate=10
         )
 
+def print_sync_group_info(participant, experiment):
+        print("Debugging")
+        print(f"Participant {participant.id}:")
+        print(f"Sync group: {participant.sync_group}")
+        print(f"Sync group leader: {participant.sync_group.leader}")
+        print(f"Is leader: {participant.sync_group.leader == participant}")
+        print(f"Sync group members: {[p.id for p in participant.sync_group.participants]}")
+        print(f"Sync group size: {len(participant.sync_group.participants)}")
+        print("---")
+
 class Exp(psynet.experiment.Experiment):
     # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
@@ -802,7 +744,7 @@ class Exp(psynet.experiment.Experiment):
 
     def __init__(self, session):
         super().__init__(session)
-        self.all_nodes = nodes  # Initialize the list of all nodes
+        #self.all_nodes = nodes  # Initialize the list of all nodes
         self.current_node_index = 0  # Start with the first node
 
     @experiment_route("/participant_in_barrier/<participant_id>", methods=["GET"])
@@ -815,7 +757,6 @@ class Exp(psynet.experiment.Experiment):
 
     timeline = Timeline(
         CustomConsent(),
-        #consent(),  # todo: (nori)
         # PageMaker(requirements, time_estimate=60),
         # CustomColorBlindnessTest(
         #      label="color_blindness_test",
@@ -839,29 +780,29 @@ class Exp(psynet.experiment.Experiment):
         # dat(),
 
         SimpleGrouper(
-            group_type="sigspace",
+            group_type="sig_space_groups",
             initial_group_size=2,
             max_wait_time=300,
         ),
-        CodeBlock(save_conditions),  # todo: how can I generate the conditions here instead of at the beg?
+
+        CodeBlock(print_sync_group_info),
 
         PageMaker(experiment_start, time_estimate=10),
 
-        CodeBlock(lambda participant: participant.set_answer("continue")),  # todo: see what happens if remove
+        #CodeBlock(lambda participant: participant.set_answer("continue")),  # todo: see what happens if remove
         # todo: add group barrier (nori)
 
-        PageMaker(director_message, time_estimate=10),
         Module(
             "experiment",
             SigSpaceTrialMaker(
                 id_="sigspace_trial",
                 trial_class=SigSpaceTrial,
-                nodes=nodes,  # todo: pass node function (nori)
-                expected_trials_per_participant=len(nodes),
-                max_trials_per_participant=len(nodes),
-                # todo: max_trials_per_block=len(nodes)  (nori)
+                nodes=get_testing_nodes,
+                expected_trials_per_participant=9,
+                max_trials_per_participant=9,
+                max_trials_per_block=9,
                 allow_repeated_nodes=False,
-                sync_group_type="sigspace",
+                sync_group_type="sig_space_groups",  # todo: do i need this here?
             ),
         ),
         questionnaire(),
