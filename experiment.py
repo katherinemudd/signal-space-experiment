@@ -16,7 +16,7 @@ from psynet.modular_page import AudioPrompt, ColorPrompt, ModularPage, PushButto
 from psynet.page import InfoPage, SuccessfulEndPage, WaitPage
 from psynet.participant import Participant
 from psynet.sync import GroupBarrier, SimpleGrouper
-from psynet.timeline import Timeline, join, Event, while_loop, CodeBlock, Module, PageMaker
+from psynet.timeline import conditional, CodeBlock, Event, join, Module, PageMaker, Timeline, while_loop
 from psynet.trial.static import StaticNode, StaticTrial, StaticTrialMaker
 from psynet.trial.chain import ChainTrialMaker
 from psynet.trial.main import TrialMaker, TrialMakerState
@@ -25,6 +25,8 @@ from psynet.experiment import get_experiment, experiment_route
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
 from psynet.asset import S3Storage
 from .wait_video_old import video_wait_page
+
+import pydevd_pycharm
 
 logger = get_logger()
 
@@ -124,17 +126,6 @@ class SigSpaceTrial(StaticTrial):
         # Clear the previous trial's data
         #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
 
-        # todo: idk about this ??
-        # if "role_index" not in participant.vars:
-        #     participant.vars["role_index"] = participant.id % 2  # 0 for director, 1 for matcher
-        #     participant.vars["role"] = "director" if participant.vars["role_index"] == 0 else "matcher"
-        #     # Initialize participant's own completion tracking with all nodes as False  # todo: all should be taken care of by psynet
-        #     if self.definition["domain"] == "music":
-        #         participant.vars["node_completion"] = {melody: False for melody in get_color_dict().keys()}
-        #     elif self.definition["domain"] == "communication":
-        #         participant.vars["node_completion"] = {color: False for color in get_color_dict().keys()}
-        #
-        #     # Show role-specific instructions
 
         # Create a while loop that continues until this specific node is completed
         return while_loop(
@@ -150,7 +141,14 @@ class SigSpaceTrial(StaticTrial):
                         group_type="sig_space_groups",
                         max_wait_time=300,
                     ),
-                    #self.show_director_message(participant=participant),  # todo
+                    conditional(
+                        "director message",
+                        lambda participant: (
+                                participant.sync_group.leader == participant and
+                                participant.vars.get("has_seen_leader_message") == False
+                        ),
+                        logic_if_true=PageMaker(self.show_director_message, time_estimate=30),
+                    ),
                     self.director_turn(participant=participant),
                     GroupBarrier(
                         id_="director_finished_trial",
@@ -179,32 +177,36 @@ class SigSpaceTrial(StaticTrial):
                 expected_repetitions=9,  # Allow up to 9 attempts per node  # todo: try with 1 (nori), check len(self.answer) if over 9 then end
             )
 
+
     def show_director_message(self, participant):
-        # todo: how to track which node / trial # ?
-        if participant.sync_group.leader == participant:  # = director
-            print('DEBUG - made it here')
-            print(f'{self.definition["domain"]}')
-            html = tags.div()
-            with html:
-                if self.definition["domain"] == "communication":
-                    print('DEBUG - made it here 2')  # doesn't work
-                    tags.h1("Director Instructions")
-                    tags.p(
-                        "You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
-                    tags.p(
-                        "You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
-                elif self.definition["domain"] == "music":
-                    tags.h1("Producer Instructions")
-                    tags.p(
-                        "As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
-                    tags.p(
-                        "You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
-                    tags.p("Press 'Next' when you are ready to begin.")
-                return InfoPage(html, time_estimate=60)
+        participant.vars.update({"has_seen_leader_message": True})  # so that the message is only seen 1x
+
+        #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
+
+
+        html = tags.div()
+        with html:
+            if self.definition["domain"] == "communication":
+                tags.h1("Director Instructions")
+                tags.p(
+                    "You will see a color and will be asked to create a rhythm that represents that color to send to your partner. Your partner will guess which color you are referring to.")
+                tags.p(
+                    "You and your partner will receive a bonus based on how quickly your partner guesses the color you were shown. The fewer trials it takes them to guess the color you were shown, the larger your bonus will be.")
+            elif self.definition["domain"] == "music":
+                tags.h1("Producer Instructions")
+                tags.p(
+                    "As the producer, you will use a drum machine to create rhythms that your partner will rate as 'not appealing' or 'appealing'.")
+                tags.p(
+                    "You and your partner will receive a bonus based on how quickly your partner finds your rhythms appealing. The fewer trials it takes them to find your rhythm appealing, the larger your bonus will be.")
+                tags.p("Press 'Next' when you are ready to begin.")
+
+        return InfoPage(
+            html,
+            time_estimate=60
+        )
 
     def director_turn(self, participant):
         if participant.sync_group.leader == participant:  # = is participant the leader
-            print(f"DEBUG director turn - I am your leader {participant.id}")
             node_content = self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody")
             # Check if we already have a rhythm for this node (use node content as key)
             existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
@@ -212,10 +214,8 @@ class SigSpaceTrial(StaticTrial):
             if existing_rhythm and existing_rhythm is not None:
                 # Show the existing rhythm with the drum machine pre-filled
                 if self.definition["domain"] == "communication":
-                    print(f'DEBUG director turn - if statement communication')
                     director_color = participant.vars["current_color"]
                     director_color_hsl = get_color_dict().get(director_color)
-                    print(f'DEBUG director turn: {director_color_hsl}')
 
                     return join(
                         ModularPage(
@@ -322,7 +322,6 @@ class SigSpaceTrial(StaticTrial):
 
                         # Generate audiofile for the rhythm
                     try:
-                        print("DEBUG - try generate audio for rhythm")
                         audio_filename = parse_and_generate_audio(answer)
                             
                             # Store the audio filename for this node
@@ -344,7 +343,6 @@ class SigSpaceTrial(StaticTrial):
                             participant.vars["audio_filename"] = audio_filename
 
     def matcher_turn(self, participant):
-
         if participant.sync_group.leader != participant:  # = matcher
             try:
                 # Retrieve the director's answer from participant vars
@@ -732,16 +730,6 @@ class CustomAudioForcedChoiceTest(AudioForcedChoiceTest):  # Custom AudioForcedC
             time_estimate=10
         )
 
-def print_sync_group_info(participant, experiment):
-        print("Debugging")
-        print(f"Participant {participant.id}:")
-        print(f"Sync group: {participant.sync_group}")
-        print(f"Sync group leader: {participant.sync_group.leader}")
-        print(f"Is leader: {participant.sync_group.leader == participant}")
-        print(f"Sync group members: {[p.id for p in participant.sync_group.participants]}")
-        print(f"Sync group size: {len(participant.sync_group.participants)}")
-        print("---")
-
 class Exp(psynet.experiment.Experiment):
     # Configure local storage for static assets and generated audio files
     variables = {"max_participant_payment": 20.0}
@@ -790,10 +778,9 @@ class Exp(psynet.experiment.Experiment):
             max_wait_time=300,
         ),
 
-        CodeBlock(print_sync_group_info),
-
         PageMaker(experiment_start, time_estimate=10),
 
+        CodeBlock(lambda participant: participant.var.set("has_seen_leader_message", False)),
         #CodeBlock(lambda participant: participant.set_answer("continue")),  # todo: see what happens if remove
         # todo: add group barrier (nori)
 

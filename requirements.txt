@@ -1,7 +1,8 @@
 #psynet@git+https://gitlab.com/PsyNetDev/PsyNet@master#egg=psynet
 psynet@git+https://gitlab.com/PsyNetDev/PsyNet@af7adbd4a52fc6b6b4b3cd0321462a1c66cdb92a#egg=psynet
 
-dallinger==11.2.0  # lower dallinger version than on system, but PsyNet uses this
+dallinger==11.3.1
+#dallinger==11.2.0  # lower dallinger version than on system, but PsyNet uses this
 gunicorn
 scipy
 audioread

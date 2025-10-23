@@ -3,11 +3,11 @@
     "mode": "debug",
     "is_local_deployment": true,
     "is_ssh_deployment": false,
-    "folder_name": "sig_space_until_correct",
+    "folder_name": "sig_space_exp",
     "secret": {
         "py/object": "uuid.UUID",
-        "hex": "b28860388716403db876962771826f97"
+        "hex": "7dd6f40a050c45e58d86c78955c739f8"
     },
-    "deployment_id": "sig_space_until_correct__mode=debug__launch=2025-10-21--18-47-41",
+    "deployment_id": "sig_space_exp__mode=debug__launch=2025-10-23--18-10-08",
     "locale": "en"
 }
