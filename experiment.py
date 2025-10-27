@@ -97,11 +97,7 @@ class SigSpaceTrial(StaticTrial):
         # Get the matcher/rater (non-leader)
         sync_group = participant.sync_group
         matcher = next((p for p in sync_group.participants if p != sync_group.leader))
-
-        matcher_answer = matcher.vars.get("last_action")  # todo: idk if this is actually getting the vars
-
-        #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
-        print(f'DEBUG check matcher answer {matcher_answer}')
+        matcher_answer = matcher.vars.get("last_action")
 
         if self.definition["domain"] == "communication":
             return matcher_answer == self.definition["color"]
@@ -160,6 +156,7 @@ class SigSpaceTrial(StaticTrial):
                 expected_repetitions=9,  # Allow up to 9 attempts per node  # todo: try with 1 (nori), check len(self.answer) if over 9 then end
             )
 
+    #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
 
     def show_director_message(self, participant):
         participant.vars.update({"has_seen_leader_message": True})  # so that the message is only seen 1x
@@ -298,7 +295,7 @@ class SigSpaceTrial(StaticTrial):
                         participant.vars["node_rhythms"] = {}
                     participant.vars["node_rhythms"][node_content] = answer
 
-                        # Generate audiofile for the rhythm
+                    # Generate audiofile for the rhythm
                     try:
                         audio_filename = parse_and_generate_audio(answer)
                             
@@ -450,7 +447,6 @@ class SigSpaceTrial(StaticTrial):
                     participant.vars["answer"] = matcher_choice
         except:
             pass
-
 
     def feedback_page(self, experiment, participant):
         if self.definition["domain"] == "communication":
