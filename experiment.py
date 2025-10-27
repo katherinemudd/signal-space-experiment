@@ -98,9 +98,10 @@ class SigSpaceTrial(StaticTrial):
         sync_group = participant.sync_group
         matcher = next((p for p in sync_group.participants if p != sync_group.leader))
 
-        matcher_answer = matcher.current_trial.vars.get("check_answer")  # todo: idk if this is actually getting the vars
+        matcher_answer = matcher.vars.get("last_action")  # todo: idk if this is actually getting the vars
 
-        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
+        #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
+        print(f'DEBUG check matcher answer {matcher_answer}')
 
         if self.definition["domain"] == "communication":
             return matcher_answer == self.definition["color"]
@@ -110,20 +111,10 @@ class SigSpaceTrial(StaticTrial):
         return False
 
     def show_trial(self, experiment, participant):
-        # Role assignment is now done in director_message function
-        #if self.definition["domain"] == 'communication':
-            #self.vars["current_color"] = self.definition["color"]  # todo
-            #participant.vars["current_color"] = self.definition["color"]
-            #participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
-
-        # Create a while loop that continues until this specific node until condition satisfied
+        # Continues with a specific node until condition satisfied
         return while_loop(
                 "node_attempt_loop",
                 lambda participant: not self.is_answer_correct(participant),
-                # lambda participant: not participant.vars.get("node_completion", {}).get(
-                #     self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody"),
-                #     False
-                # ),
 
             # Use participant's own completion state
                 # Continue looping as long as the current node is NOT completed for this participant
@@ -456,9 +447,6 @@ class SigSpaceTrial(StaticTrial):
             for participant in participants:
                 if participant.sync_group.leader != participant:  # matcher/rater
                     matcher_choice = participant.vars.get("last_action")
-
-                    print(f'DEBUG - matcher_choice 2: {matcher_choice}')
-
                     participant.vars["answer"] = matcher_choice
         except:
             pass
@@ -469,19 +457,14 @@ class SigSpaceTrial(StaticTrial):
             sync_group = participant.sync_group
             matcher = next((p for p in sync_group.participants if p != sync_group.leader))
             matcher_choice = matcher.vars.get("last_action")
-            print(f'DEBUG - matcher_choice CHECK: {matcher_choice}')
 
             if participant.sync_group.leader != participant:  # = is participant the matcher
-                #matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
-                #print(f'DEBUG - matcher_choice matcher: {matcher_choice}')
-
                 if matcher_choice == self.definition["color"]:  # Successful
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                     f"You guessed the right color.<br>")
                 elif matcher_choice != self.definition["color"]:  # Unsuccessful
                     prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                                     f"You guessed the wrong color. Try again!<br>")
-
             else:  # "director"
                 if matcher_choice == self.definition["color"]:  # Successful
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
@@ -496,7 +479,6 @@ class SigSpaceTrial(StaticTrial):
             matcher_choice = matcher.vars.get("last_action")
 
             if participant.sync_group.leader != participant:  # matcher
-
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")

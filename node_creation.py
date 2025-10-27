@@ -17,8 +17,6 @@ def get_nodes():
         StaticNode(
             definition={
                 item_key: item,
-                "attempts": 0,  # todo: remove
-                #"completed": False,  # todo: remove?
                 "domain": domain,
                 "grid_size": grid_size,
                 "drum_kit": drum_kit,
@@ -46,8 +44,6 @@ def get_testing_nodes():
         StaticNode(
             definition={
                 item_key: item,
-                "attempts": 0,  # todo: change to participant vars
-                "completed": False,  # todo: change to participant vars
                 "domain": domain,
                 "grid_size": 4,
                 "drum_kit": "hihat+snare+kick",
