@@ -85,31 +85,7 @@ class SigSpaceTrialMaker(StaticTrialMaker):
             sync_group_type=sync_group_type,
             #block = 0  # (nori)
         )
-    
-    def get_next_trial(self, experiment, participant):  # todo: I don't think this is necessary
-        """Override to only select uncompleted nodes"""
-        # Get all uncompleted nodes
-        completed_nodes = participant.vars.get("node_completion", {})
-        uncompleted_nodes = []
-        
-        for node in self.nodes:
-            if node.definition["domain"] == "music":
-                node_content = node.definition["melody"]
-            else:  # communication
-                node_content = node.definition["color"]
-            
-            if not completed_nodes.get(node_content, False):
-                uncompleted_nodes.append(node)
 
-        if uncompleted_nodes:
-            # Randomly select from uncompleted nodes
-            selected_node = random.choice(uncompleted_nodes)
-            #print(f"selected node content={selected_node.definition.get('melody', selected_node.definition.get('color'))}")
-            return selected_node
-        else:
-            # All nodes completed
-            print(f"All nodes completed")
-            return None
 
 class SigSpaceTrial(StaticTrial):
     time_estimate = 5
@@ -117,23 +93,39 @@ class SigSpaceTrial(StaticTrial):
     time_credit_before_trial = 0
     time_credit_after_trial = 0
 
+    def is_answer_correct(self, participant):
+        # Get the matcher/rater (non-leader)
+        sync_group = participant.sync_group
+        matcher = next((p for p in sync_group.participants if p != sync_group.leader))
+
+        matcher_answer = matcher.current_trial.vars.get("check_answer")  # todo: idk if this is actually getting the vars
+
+        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
+
+        if self.definition["domain"] == "communication":
+            return matcher_answer == self.definition["color"]
+        elif self.definition["domain"] == "music":
+            return matcher_answer == "appealing"
+
+        return False
+
     def show_trial(self, experiment, participant):
         # Role assignment is now done in director_message function
-        if self.definition["domain"] == 'communication':
-            participant.vars["current_color"] = self.definition["color"]
-            participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
+        #if self.definition["domain"] == 'communication':
+            #self.vars["current_color"] = self.definition["color"]  # todo
+            #participant.vars["current_color"] = self.definition["color"]
+            #participant.vars["director_color"] = self.definition["color"]  # Store the director's color separately
 
-        # Clear the previous trial's data
-        #participant.vars["last_trial"] = {"action_self": None, "action_other": None}  # todo: adding this messes things up
-
-
-        # Create a while loop that continues until this specific node is completed
+        # Create a while loop that continues until this specific node until condition satisfied
         return while_loop(
                 "node_attempt_loop",
-                lambda participant: not participant.vars.get("node_completion", {}).get(
-                    self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody"),
-                    False
-                ),  # Use participant's own completion state
+                lambda participant: not self.is_answer_correct(participant),
+                # lambda participant: not participant.vars.get("node_completion", {}).get(
+                #     self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody"),
+                #     False
+                # ),
+
+            # Use participant's own completion state
                 # Continue looping as long as the current node is NOT completed for this participant
                 join(
                     GroupBarrier(
@@ -160,14 +152,14 @@ class SigSpaceTrial(StaticTrial):
                     GroupBarrier(
                         id_="matcher_finished_trial",
                         group_type="sig_space_groups",
-                        on_release=self.get_matcher_answer,
+                        on_release=self.save_matcher_answer,
                         max_wait_time=300,
                     ),
                     WaitPage(
                         1,
                         content="Waiting for your partner...",
                     ),
-                    #self.feedback_page(experiment=experiment, participant=participant),
+                    self.feedback_page(experiment=experiment, participant=participant),
                     GroupBarrier(
                         id_="trial_completed",
                         group_type="sig_space_groups",
@@ -180,9 +172,6 @@ class SigSpaceTrial(StaticTrial):
 
     def show_director_message(self, participant):
         participant.vars.update({"has_seen_leader_message": True})  # so that the message is only seen 1x
-
-        #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
-
 
         html = tags.div()
         with html:
@@ -214,7 +203,7 @@ class SigSpaceTrial(StaticTrial):
             if existing_rhythm and existing_rhythm is not None:
                 # Show the existing rhythm with the drum machine pre-filled
                 if self.definition["domain"] == "communication":
-                    director_color = participant.vars["current_color"]
+                    director_color = self.definition["color"]
                     director_color_hsl = get_color_dict().get(director_color)
 
                     return join(
@@ -231,7 +220,7 @@ class SigSpaceTrial(StaticTrial):
                             save_answer="last_action"
                         )
                     )
-                else:  # DOMAIN == "music"
+                else:  # music
                     return join(
                         ModularPage(
                             "director-task",
@@ -249,9 +238,8 @@ class SigSpaceTrial(StaticTrial):
             else:
                 # First time for this node - allow them to create a rhythm
                 if self.definition["domain"] == "communication":
-                    director_color = participant.vars["current_color"]
+                    director_color = self.definition["color"]  # todo: self.current_trial.vars["current_color"]
                     director_color_hsl = get_color_dict().get(director_color)
-                    #print(f'DEBUG - Director turn: node content is {node_content}, node is {self.definition}')
 
                     return join(
                         ModularPage(
@@ -267,7 +255,7 @@ class SigSpaceTrial(StaticTrial):
                             save_answer="last_action"
                         )
                     )
-                else:  # DOMAIN == "music"
+                else:  # "music"
                     return join(
                         ModularPage(
                             "director-task",
@@ -294,7 +282,7 @@ class SigSpaceTrial(StaticTrial):
         for participant in participants:
             if participant.sync_group.leader == participant:  # = director
                 # Get the current node content from the trial definition
-                # We need to access the trial definition through the experiment
+                # Need to access the trial definition through the experiment
                 experiment = get_experiment()
                 current_trial = participant.current_trial
                 if current_trial:
@@ -305,7 +293,6 @@ class SigSpaceTrial(StaticTrial):
 
                 # Always get the current rhythm from last_action
                 answer = participant.vars.get("last_action")
-                #self.node.definition["director_rhythm"] = answer  # todo
                 self.node.var.director_rhythm = answer
 
                 # Check if we already have a rhythm for this node
@@ -464,156 +451,62 @@ class SigSpaceTrial(StaticTrial):
                 )
             )
 
-    def get_matcher_answer(self, participants: List[Participant]):
+    def save_matcher_answer(self, participants: List[Participant]):
         try:
-            # this is just to set the matcher_choice as an accessible attribute to both participants
-            assert len(participants) == 2
-            
-            # Find which participant is the matcher
-            matcher_participant = None
-            director_participant = None
             for participant in participants:
-                if participant.vars.get("role") == "matcher":
-                    matcher_participant = participant
-                elif participant.vars.get("role") == "director":
-                    director_participant = participant
-            
-            # Get the matcher's choice
-            matcher_choice = matcher_participant.vars.get("last_action")
-            director_choice = director_participant.vars.get("last_action")
+                if participant.sync_group.leader != participant:  # matcher/rater
+                    matcher_choice = participant.vars.get("last_action")
 
-            # Share the choices with both participants
-            for participant in participants:
-                self.node.var.matcher_choice = matcher_participant.vars.get("last_action")  # todo
-                if not hasattr(participant, 'var'):
-                    participant.var = {}
-                participant.var.last_trial = {
-                    "action_self": participant.vars.get("last_action"),
-                    "action_other": matcher_choice if participant.vars.get("role") == "director" else director_choice,
-                }
-                # Also store in vars for easier access
-                participant.vars["last_trial"] = {
-                    "action_self": participant.vars.get("last_action"),
-                    "action_other": matcher_choice if participant.vars.get("role") == "director" else director_choice,
-                }
-            #print(f'get_matcher_answer self node definition {self.node.definition}')  # todo: works here (matcher_choice = color)
-        except Exception as e:
-            print(f"Error in get_matcher_answer: {str(e)}")
+                    print(f'DEBUG - matcher_choice 2: {matcher_choice}')
+
+                    participant.vars["answer"] = matcher_choice
+        except:
+            pass
+
 
     def feedback_page(self, experiment, participant):
-        #print(f'feedback_page self node definition {self.node.definition}')  # todo: doesn't have matcher_choice, but it does have it on line 504
         if self.definition["domain"] == "communication":
+            sync_group = participant.sync_group
+            matcher = next((p for p in sync_group.participants if p != sync_group.leader))
+            matcher_choice = matcher.vars.get("last_action")
+            print(f'DEBUG - matcher_choice CHECK: {matcher_choice}')
+
             if participant.sync_group.leader != participant:  # = is participant the matcher
-                matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
-                matcher_choice_hsl = get_color_dict().get(matcher_choice, [0, 0, 0])
+                #matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action
+                #print(f'DEBUG - matcher_choice matcher: {matcher_choice}')
 
-                director_color = participant.vars["director_color"]  # Use the stored director color
-                director_color_hsl = get_color_dict().get(director_color, [0, 0, 0])
-
-                if matcher_choice != director_color:
-                    result = "Unsuccessful!"
-                    self.node.var.attempts = self.definition.get("attempts", 0) + 1  # todo: Increment attempts counter
-                elif matcher_choice == director_color:
-                    result = "Successful!"
-                    # Mark as completed using node content as key
-                    node_content = self.definition.get("color")
-                    participant.vars["node_completion"][node_content] = True
-
-                    # Check if there are any uncompleted nodes left
-                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
-                        node.definition.get("color"), False
-                    )]
-                    if uncompleted_nodes:
-                        print('skip')
-                        #self.increase_current_node(participant)
-
-                if result == "Successful!":
-                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                if matcher_choice == self.definition["color"]:  # Successful
+                    prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                     f"You guessed the right color.<br>")
-                elif result == "Unsuccessful!":
-                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                elif matcher_choice != self.definition["color"]:  # Unsuccessful
+                    prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                                     f"You guessed the wrong color. Try again!<br>")
 
             else:  # "director"
-                matcher_choice_alt = participant.vars.get("last_trial")
-                matcher_choice = participant.vars.get("last_trial", {}).get("action_other")  # Get the matcher's choice from last_trial
-                matcher_choice_hsl = get_color_dict().get(matcher_choice, [0, 0, 0])
-
-                director_color = participant.vars["director_color"]  # Use the stored director color
-                director_color_hsl = get_color_dict().get(director_color, [0, 0, 0])
-
-                if matcher_choice == director_color:
-                    result = "Successful!"
-                    # Mark as completed using node content as key
-                    node_content = self.definition.get("color")
-                    participant.vars["node_completion"][node_content] = True
-                    
-                    # Check if there are any uncompleted nodes left
-                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
-                        node.definition.get("color"), False
-                    )]
-                    if uncompleted_nodes:
-                        print('skip')
-                        #self.increase_current_node(participant)
-                    else:
-                        # All nodes completed
-                        print(f'DEBUG: All nodes completed')
-                else:
-                    # Don't set completed flag - let the while loop continue
-                    result = "Unsuccessful!"
-
-                # Set prompt based on result
-                if result == "Successful!":
-                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                if matcher_choice == self.definition["color"]:  # Successful
+                    prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                     f"Your partner guessed the right color.<br>")
-                elif result == "Unsuccessful!":
-                    prompt = Markup(f"<strong>{result}</strong><br><br>"
+                elif matcher_choice != self.definition["color"]:  #Unsuccessful
+                    prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                                     f"Your partner guessed the wrong color. Try again!<br>")
 
         elif self.definition["domain"] == "music":
-            if participant.vars.get("role") == "matcher":
-                matcher_choice = participant.vars.get("last_action")  # Get the matcher's choice from last_action (same as communication domain)
+            sync_group = participant.sync_group
+            matcher = next((p for p in sync_group.participants if p != sync_group.leader))
+            matcher_choice = matcher.vars.get("last_action")
+
+            if participant.sync_group.leader != participant:  # matcher
 
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"You found your partner's rhythm appealing.")
-                    # Mark as completed using node content as key
-                    node_content = self.definition.get("melody")
-                    participant.vars["node_completion"][node_content] = True
-
-                    # Check if there are any uncompleted nodes left
-                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
-                        node.definition.get("melody"), False
-                    )]
-                    if uncompleted_nodes:
-                        print('skip')
-                        #self.increase_current_node(participant)  # todo
-                    else:
-                        # All nodes completed
-                        print(f'DEBUG: All nodes completed')
-                else:  # Don't set completed flag - let the while loop continue
+                else:
                     prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
-                            f"You did not find your partner's rhythm appealing.")
-            else:  # director
-                matcher_choice = participant.vars.get("last_trial", {}).get("action_other")
-
+                                f"You did not find your partner's rhythm appealing.")
+            elif participant.sync_group.leader == participant:  # director
                 if matcher_choice == "Appealing":
                     prompt = Markup(f"<strong>Successful!</strong><br><br>"
                                 f"Your partner found your rhythm appealing.")
-                    # Mark as completed using node content as key
-                    node_content = self.definition.get("melody")
-                    participant.vars["node_completion"][node_content] = True
-
-                    # Check if there are any uncompleted nodes left
-                    uncompleted_nodes = [node for node in nodes if not participant.vars.get("node_completion", {}).get(
-                        node.definition.get("melody"), False
-                    )]
-                    if uncompleted_nodes:
-                        print('skip')
-                        #self.increase_current_node(participant)
-                    else:
-                        # All nodes completed
-                        print(f'DEBUG: All nodes completed')
                 else:
                     prompt = Markup(f"<strong>Unsuccessful!</strong><br><br>"
                             f"Your partner did not find your rhythm appealing.")
