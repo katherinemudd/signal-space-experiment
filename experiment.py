@@ -156,8 +156,6 @@ class SigSpaceTrial(StaticTrial):
                 expected_repetitions=9,  # Allow up to 9 attempts per node  # todo: try with 1 (nori), check len(self.answer) if over 9 then end
             )
 
-    #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
-
     def show_director_message(self, participant):
         participant.vars.update({"has_seen_leader_message": True})  # so that the message is only seen 1x
 
@@ -184,11 +182,13 @@ class SigSpaceTrial(StaticTrial):
 
     def director_turn(self, participant):
         if participant.sync_group.leader == participant:  # = is participant the leader
-            node_content = self.definition.get("color") if self.definition["domain"] == "communication" else self.definition.get("melody")
-            # Check if we already have a rhythm for this node (use node content as key)
-            existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
 
-            if existing_rhythm and existing_rhythm is not None:
+            #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
+            # Check if we already have a rhythm for this node (use node content as key)
+            current_color = self.definition.get("color")
+            rhythm = participant.vars.get("node_rhythms", {}).get(current_color)
+
+            if rhythm:
                 # Show the existing rhythm with the drum machine pre-filled
                 if self.definition["domain"] == "communication":
                     director_color = self.definition["color"]
@@ -203,7 +203,7 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=existing_rhythm),
+                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=rhythm),
                             time_estimate=60,
                             save_answer="last_action"
                         )
@@ -218,7 +218,7 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=existing_rhythm),
+                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=rhythm),
                             time_estimate=60,
                             save_answer="last_action"
                         )
@@ -287,7 +287,7 @@ class SigSpaceTrial(StaticTrial):
                 existing_rhythm = participant.vars.get("node_rhythms", {}).get(node_content)
 
                 if existing_rhythm and existing_rhythm is not None and answer == existing_rhythm:
-                        # Rhythm hasn't changed - reuse existing audio
+                    # Rhythm hasn't changed - reuse existing audio
                     audio_filename = participant.vars.get("node_audio_filenames", {}).get(node_content)
                 else:
                     # New or modified rhythm - store it and generate new audio
