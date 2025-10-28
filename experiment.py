@@ -94,16 +94,22 @@ class SigSpaceTrial(StaticTrial):
     time_credit_before_trial = 0
     time_credit_after_trial = 0
 
-    def is_answer_correct(self, participant):
-        # Get the matcher/rater (non-leader)
-        sync_group = participant.sync_group
-        matcher = next((p for p in sync_group.participants if p != sync_group.leader))
-        matcher_answer = matcher.vars.get("last_action")
+    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
 
-        if self.definition["domain"] == "communication":
-            return matcher_answer == self.definition["color"]
-        elif self.definition["domain"] == "music":
-            return matcher_answer == "appealing"
+    def is_answer_correct(self, participant):
+        sync_group = participant.sync_group
+        director = next((p for p in sync_group.participants if p == sync_group.leader))  # get director/producer
+
+        # if rhythm is in this node, then check for correct answer (otherwise it's the first trial of node)
+        if director.vars.get("node_rhythms"):
+            matcher = next((p for p in sync_group.participants if p != sync_group.leader))  # Get the matcher/rater
+
+            matcher_answer = matcher.vars.get("last_action")
+
+            if self.definition["domain"] == "communication":
+                return matcher_answer == self.definition["color"]
+            elif self.definition["domain"] == "music":
+                return matcher_answer == "Appealing"
 
         return False
 
@@ -184,7 +190,6 @@ class SigSpaceTrial(StaticTrial):
     def director_turn(self, participant):
         if participant.sync_group.leader == participant:  # = is participant the leader
 
-            #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
             if self.definition["domain"] == "communication":
                 current_color = self.definition.get("color")
                 director_color_hsl = get_color_dict().get(current_color)
@@ -223,14 +228,9 @@ class SigSpaceTrial(StaticTrial):
                         )
                     )
 
-            else:   # self.definition["domain"] == "music"
+            else:   # self.definition["domain"] == "music"  # todo: need to check if appealing as well
                 current_melody = self.definition.get("melody")
                 rhythm = participant.vars.get("node_rhythms", {}).get(current_melody)
-
-                # todo: needs to be "melody" in music domain, not "color"
-                print(f'DEBUG {participant.vars.get("node_rhythms")}')
-                print(f'DEBUG director rhythm: {rhythm}')  # todo
-                print(f'DEBUG director answer: {participant.vars.get("director_answer")}')  # todo
 
                 if rhythm:
                     return join(
