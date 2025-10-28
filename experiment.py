@@ -3,6 +3,7 @@ from itertools import accumulate
 from typing import List
 
 from dominate import tags
+from librosa.feature import rhythm
 from markupsafe import Markup
 
 import psynet.experiment
@@ -184,16 +185,12 @@ class SigSpaceTrial(StaticTrial):
         if participant.sync_group.leader == participant:  # = is participant the leader
 
             #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True),
-            # Check if we already have a rhythm for this node (use node content as key)
-            current_color = self.definition.get("color")
-            rhythm = participant.vars.get("node_rhythms", {}).get(current_color)
+            if self.definition["domain"] == "communication":
+                current_color = self.definition.get("color")
+                director_color_hsl = get_color_dict().get(current_color)
+                rhythm = participant.vars.get("node_rhythms", {}).get(current_color)
 
-            if rhythm:
-                # Show the existing rhythm with the drum machine pre-filled
-                if self.definition["domain"] == "communication":
-                    director_color = self.definition["color"]
-                    director_color_hsl = get_color_dict().get(director_color)
-
+                if rhythm:  # Check if exists a rhythm for this node show the pre-filled drum machine
                     return join(
                         ModularPage(
                             "director-task",
@@ -208,27 +205,8 @@ class SigSpaceTrial(StaticTrial):
                             save_answer="last_action"
                         )
                     )
-                else:  # music
-                    return join(
-                        ModularPage(
-                            "director-task",
-                            Prompt(
-                                Markup(
-                                    f"<div style='text-align:center;'>Make a rhythm to have your partner guess this color.</div><br>"
-                                ),
-                                text_align="center"
-                            ),
-                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=rhythm),
-                            time_estimate=60,
-                            save_answer="last_action"
-                        )
-                    )
-            else:
-                # First time for this node - allow them to create a rhythm
-                if self.definition["domain"] == "communication":
-                    director_color = self.definition["color"]  # todo: self.current_trial.vars["current_color"]
-                    director_color_hsl = get_color_dict().get(director_color)
 
+                else:   # communication but no rhythm yet (1st trial of node)
                     return join(
                         ModularPage(
                             "director-task",
@@ -238,11 +216,38 @@ class SigSpaceTrial(StaticTrial):
                                 ),
                                 text_align="center"
                             ),
-                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"], self.definition["grid_size"]),
+                            ColorCubeControl(director_color_hsl, self.definition["drum_kit"],
+                                             self.definition["grid_size"]),
                             time_estimate=60,
                             save_answer="last_action"
                         )
                     )
+
+            else:   # self.definition["domain"] == "music"
+                current_melody = self.definition.get("melody")
+                rhythm = participant.vars.get("node_rhythms", {}).get(current_melody)
+
+                # todo: needs to be "melody" in music domain, not "color"
+                print(f'DEBUG {participant.vars.get("node_rhythms")}')
+                print(f'DEBUG director rhythm: {rhythm}')  # todo
+                print(f'DEBUG director answer: {participant.vars.get("director_answer")}')  # todo
+
+                if rhythm:
+                    return join(
+                        ModularPage(
+                            "director-task",
+                            Prompt(
+                                Markup(
+                                    "<div style='text-align:center;'>Send an appealing rhythm to your partner.</div><br>"
+                                ),
+                                text_align="center"
+                            ),
+                            DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"], initial_pattern=rhythm),
+                            time_estimate=60,
+                            save_answer="last_action"
+                        )
+                    )
+
                 else:  # "music"
                     return join(
                         ModularPage(
@@ -275,7 +280,7 @@ class SigSpaceTrial(StaticTrial):
                 current_trial = participant.current_trial
                 if current_trial:
                     node_content = current_trial.definition.get("color") if self.definition["domain"] == "communication" else current_trial.definition.get("melody")
-                else:  # todo
+                else:
                     print("ERROR - No current trial found")
                     continue
 

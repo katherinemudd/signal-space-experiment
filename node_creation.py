@@ -20,12 +20,10 @@ def get_nodes():
                 "domain": domain,
                 "grid_size": grid_size,
                 "drum_kit": drum_kit,
-                **({"matcher_choice": "add color"} if domain == "communication" else {})
             },
             #block=f'{domain}_{grid_size}_{drum_kit}',  # todo: not sure, maybe block instead otherwise?
         )
-        #for domain in ["communication", "music"]
-        for domain in ["communication"]
+        for domain in ["communication", "music"]
         for grid_size in [4, 8]
         for drum_kit in ["snare+kick", "hihat+snare+kick"]
         for item in (list(get_color_dict().keys()))
@@ -35,7 +33,7 @@ def get_nodes():
 
 
 def get_testing_nodes():
-    domain = "communication"
+    domain = "music"
     grid_size = 4
     drum_kit = "hihat+snare+kick"
     #condition = "test"
@@ -56,12 +54,5 @@ def get_testing_nodes():
         for item_key in (["color"] if domain == "communication" else ["melody"])
     ]
     return nodes
-
-
-# for checking nodes
-#nodes = get_nodes()
-#for i, node in enumerate(nodes):
-#    print(f"Node {i+1}: {node.definition}")
-
 
 
