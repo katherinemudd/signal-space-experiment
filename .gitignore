@@ -32,4 +32,4 @@ Thumbs.db
 # Git directory (should already be excluded)
 .git/
 
-.dallingerignore
+.dallingerconfig
