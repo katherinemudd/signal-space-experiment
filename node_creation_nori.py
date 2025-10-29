@@ -21,19 +21,19 @@ def get_nodes():
                 "grid_size": grid_size,
                 "drum_kit": drum_kit,
             },
-            #block=f'{domain}_{grid_size}_{drum_kit}',  # todo: not sure, maybe block instead otherwise?
+            #block=f'{domain}_{grid_size}_{drum_kit}',
         )
         for domain in ["communication", "music"]
         for grid_size in [4, 8]
         for drum_kit in ["snare+kick", "hihat+snare+kick"]
-        for item in (list(get_color_dict().keys()))
-        for item_key in (["color"] if domain == "communication" else ["melody"])
+        #for item in (list(get_color_dict().keys()))
+        #for item_key in (["color"] if domain == "communication" else ["melody"])
     ]
     return nodes
 
 
 def get_testing_nodes():
-    domain = "communication"
+    domain = "music"
     grid_size = 4
     drum_kit = "hihat+snare+kick"
     #condition = "test"
@@ -54,5 +54,3 @@ def get_testing_nodes():
         for item_key in (["color"] if domain == "communication" else ["melody"])
     ]
     return nodes
-
-

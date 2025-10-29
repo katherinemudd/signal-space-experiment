@@ -6,8 +6,8 @@
     "folder_name": "sig_space_exp",
     "secret": {
         "py/object": "uuid.UUID",
-        "hex": "cbf2d5056d754895bd834baea2451e78"
+        "hex": "9ae13d9a586f4dcda80187631aac3e7e"
     },
-    "deployment_id": "sig_space_exp__mode=debug__launch=2025-10-28--16-28-52",
+    "deployment_id": "static-experiment-demo__mode=debug__launch=2025-10-29--19-52-18",
     "locale": "en"
 }
