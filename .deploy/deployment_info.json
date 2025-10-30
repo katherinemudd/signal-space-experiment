@@ -3,11 +3,11 @@
     "mode": "debug",
     "is_local_deployment": true,
     "is_ssh_deployment": false,
-    "folder_name": "sig_space_exp",
+    "folder_name": "signal-space-experiment",
     "secret": {
         "py/object": "uuid.UUID",
-        "hex": "c73e574758954b48a8f61cd6ea0f1598"
+        "hex": "7fbe39d6e096400eb5235b85df272553"
     },
-    "deployment_id": "signal-space-experiment__mode=debug__launch=2025-10-29--20-48-13",
+    "deployment_id": "signal-space-experiment__mode=debug__launch=2025-10-29--23-35-49",
     "locale": "en"
 }
