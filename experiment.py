@@ -132,30 +132,7 @@ class ColorTrial(StaticTrial):
                     )
 
 class ColorTrialMaker(StaticTrialMaker):
-    def performance_check(self, experiment, participant, participant_trials):
-        """Should return a dict: {"score": float, "passed": bool}"""
-        score = 0
-        failed = False
-        for trial in participant_trials:
-            if trial.answer == "Not at all":
-                failed = True
-            else:
-                score += 1
-        return {"score": score, "passed": not failed}
-
-    def compute_performance_reward(self, score, passed):
-        # At the end of the trial maker, we give the participant 1 dollar for each point.
-        # This is combined with their trial-level performance reward to give their overall performance reward.
-        return 1.0 * score
-
-    give_end_feedback_passed = True
-
-    def get_end_feedback_passed_page(self, score):
-        return InfoPage(
-            Markup(f"You finished the color questions! Your score was {score}."),
-            time_estimate=5,
-        )
-
+    pass
 
 color_trial_maker = ColorTrialMaker(
     id_="colors",
