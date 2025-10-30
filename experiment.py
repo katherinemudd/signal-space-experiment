@@ -20,7 +20,8 @@ from psynet.page import SuccessfulEndPage
 from psynet.prescreen import ColorBlindnessTest, AudioForcedChoiceTest
 from psynet.timeline import join, PageMaker
 from .questionnaire import questionnaire
-
+from psynet.timeline import switch
+from psynet.page import InfoPage
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
@@ -102,12 +103,12 @@ class ColorTrial(StaticTrial):
 
     def show_trial(self, experiment, participant):
         current_color = self.definition.get("color")
-
-        if self.definition["domain"] == "communication":
-            color_hsl = get_color_dict().get(current_color)
-
-            return join(
-                ModularPage(
+        color_hsl = get_color_dict().get(current_color)
+        return join (switch(
+            "domino-choice",
+            lambda participant: participant.current_trial.definition.get("domain"),
+            branches={
+                "communication":  ModularPage(
                 "director-task-communication",
                     Prompt(
                         Markup("<div style='text-align:center;'>Create a rhythm to have someone else guess this color</div><br>"),
@@ -115,11 +116,8 @@ class ColorTrial(StaticTrial):
                     ColorCubeControl(color_hsl, self.definition["drum_kit"], self.definition["grid_size"]),
                     time_estimate=self.time_estimate,
                     save_answer="last_action"
-                )
-            )
-        else:
-            return join(
-                ModularPage(
+                ),
+                "music": ModularPage(
                 "director-task-music",
                     Prompt(
                         Markup("<div style='text-align:center;'>Create an appealing rhythm.</div><br>"),
@@ -128,8 +126,38 @@ class ColorTrial(StaticTrial):
                     DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"]),
                     time_estimate=self.time_estimate,
                     save_answer="last_action"
-                        )
-                    )
+                        ),
+            },
+        ))
+
+
+        # if self.definition["domain"] == "communication":
+        #     color_hsl = get_color_dict().get(current_color)
+        #
+        #     return join(
+        #         ModularPage(
+        #         "director-task-communication",
+        #             Prompt(
+        #                 Markup("<div style='text-align:center;'>Create a rhythm to have someone else guess this color</div><br>"),
+        #                 text_align="center"),
+        #             ColorCubeControl(color_hsl, self.definition["drum_kit"], self.definition["grid_size"]),
+        #             time_estimate=self.time_estimate,
+        #             save_answer="last_action"
+        #         )
+        #     )
+        # else:
+        #     return join(
+        #         ModularPage(
+        #         "director-task-music",
+        #             Prompt(
+        #                 Markup("<div style='text-align:center;'>Create an appealing rhythm.</div><br>"),
+        #                 text_align="center"
+        #             ),
+        #             DrumMachineControl(self.definition["drum_kit"], self.definition["grid_size"]),
+        #             time_estimate=self.time_estimate,
+        #             save_answer="last_action"
+        #                 )
+        #             )
 
 class ColorTrialMaker(StaticTrialMaker):
     pass
@@ -238,28 +266,28 @@ class Exp(psynet.experiment.Experiment):
     initial_recruitment_size = 1
 
     timeline = Timeline(
-        CustomConsent(),
-        PageMaker(requirements, time_estimate=60),
-        CustomColorBlindnessTest(
-             label="color_blindness_test",
-             performance_threshold=1,  # Participants can make 1 mistake
-             time_estimate_per_trial=5.0,
-             hide_after=3.0,  # Image disappears after 3 seconds
-        ),
-        CustomAudioForcedChoiceTest(
-             csv_path="cats_dogs_birds.csv",
-             answer_options=["cat", "dog", "bird"],
-             performance_threshold=1,  # Participants can make 1 mistake
-             instructions="""
-                 <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
-                 <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
-                 """,
-             question="Select the category which fits best to the played sound file.",
-             label="audio_forced_choice_test",
-             time_estimate_per_trial=8.0,
-             n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
-        ),
-        dat(),
+        # CustomConsent(),
+        # PageMaker(requirements, time_estimate=60),
+        # CustomColorBlindnessTest(
+        #      label="color_blindness_test",
+        #      performance_threshold=1,  # Participants can make 1 mistake
+        #      time_estimate_per_trial=5.0,
+        #      hide_after=3.0,  # Image disappears after 3 seconds
+        # ),
+        # CustomAudioForcedChoiceTest(
+        #      csv_path="cats_dogs_birds.csv",
+        #      answer_options=["cat", "dog", "bird"],
+        #      performance_threshold=1,  # Participants can make 1 mistake
+        #      instructions="""
+        #          <p>This test helps us ensure you can properly hear and classify audio stimuli.</p>
+        #          <p>In each trial, you will hear a sound of an animal. Which animal does this sound come from?</p>
+        #          """,
+        #      question="Select the category which fits best to the played sound file.",
+        #      label="audio_forced_choice_test",
+        #      time_estimate_per_trial=8.0,
+        #      n_stimuli_to_use=3  # Use 3 random stimuli from the CSV
+        # ),
+        # dat(),
         color_trial_maker,
         questionnaire(),
         debrief_and_feedback(),

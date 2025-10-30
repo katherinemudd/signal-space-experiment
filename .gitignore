@@ -31,5 +31,8 @@ Thumbs.db
 
 # Git directory (should already be excluded)
 .git/
-
+.deploy/
+.venv/
+temp_backup/
+changed/
 .dallingerconfig
